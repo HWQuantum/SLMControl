@@ -1,8 +1,6 @@
-from PyQt5.QtWidgets import QApplication, QWidget
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QTimer
+from PyQt5.QtCore import pyqtSlot
 import pyqtgraph as pg
 import numpy as np
-import sys
 
 
 class SLMDisplay():
