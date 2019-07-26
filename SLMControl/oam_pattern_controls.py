@@ -114,6 +114,13 @@ class OAMControlSet(QWidget):
         self.layout.removeRow(pattern)
         self.value_changed.emit()
 
+    def remove_all_rows(self):
+        '''Self explanatory
+        '''
+        for i in range(self.layout.rowCount()):
+            self.removeRow(0)
+        self.value_changed.emit()
+
     def get_values(self):
         '''Get the values of the contained OAM patterns and return
         them in a list
