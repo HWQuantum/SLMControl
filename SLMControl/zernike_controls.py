@@ -156,14 +156,8 @@ class ZernikeSet(QWidget):
             for i, c in self.controls.items()
         ], axis=0))
 
-
-if __name__ == '__main__':
-    from PyQt5.QtWidgets import QApplication
-    app = QApplication([])
-    x = np.linspace(-1, 1, 100)
-    y = np.linspace(-1, 1, 100)
-    X, Y = np.meshgrid(x, y)
-    a = ZernikeSet(X, Y)
-    a.show()
-    print(a.get_pattern())
-    app.exec()
+    def reset_coefficients(self):
+        '''Reset all coefficients to 0
+        '''
+        for control in self.controls.values():
+            control.setValue(0)
