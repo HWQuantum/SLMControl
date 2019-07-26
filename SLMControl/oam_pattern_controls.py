@@ -169,15 +169,6 @@ class XYController(QGroupBox):
                 self.y.setValue(value)
 
 
-class SLMController(QWidget):
-    '''A controller for a single SLM
-    '''
-    def __init__(self, screens):
-        '''Pass a list of screens to allow this to select what screen a
-        pattern is displayed on
-        '''
-
-
 if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
     a = QApplication([])
