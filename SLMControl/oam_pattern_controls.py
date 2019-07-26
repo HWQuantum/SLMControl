@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QGroupBox, QGridLayout, QLabel
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtWidgets import QWidget, QGroupBox, QGridLayout, QLabel, QPushButton, QFormLayout, QHBoxLayout, QSpacerItem
+from PyQt5.QtCore import pyqtSignal, pyqtSlot
 import pyqtgraph as pg
 
 
@@ -43,6 +43,8 @@ class OAMControls(QWidget):
         }
 
     def set_values(self, *args, **kwargs):
+        '''Set the values from an args dictionary or kwargs
+        '''
         for arg in args:
             for key, value in arg.items():
                 if key == "amplitude":
@@ -62,6 +64,64 @@ class OAMControls(QWidget):
                 self.phase.setValue(value)
             elif key == "position":
                 self.position.set_values(value)
+
+
+class CloseWrapper(QGroupBox):
+    close = pyqtSignal()
+
+    wrapped_widget = None
+
+    def __init__(self, other_widget):
+        super().__init__()
+        self.wrapped = other_widget
+
+        layout = QHBoxLayout()
+        close = QPushButton("Close")
+
+        close.clicked.connect(self.close.emit)
+
+        layout.addWidget(self.wrapped, 6)
+        layout.addWidget(close, 1)
+
+        self.setLayout(layout)
+
+
+class OAMControlSet(QWidget):
+    value_changed = pyqtSignal()
+
+    def __init__(self):
+        super().__init__()
+        self.layout = QFormLayout()
+        self.setLayout(self.layout)
+
+    @pyqtSlot()
+    def add_new_oam_pattern(self):
+        '''Add a new OAM pattern to the set
+        '''
+        controller = OAMControls()
+        controller.value_changed.connect(self.value_changed.emit)
+
+        wrapped_controller = CloseWrapper(controller)
+        wrapped_controller.close.connect(
+            lambda: self.remove_pattern(wrapped_controller))
+
+        self.layout.addRow(wrapped_controller)
+        self.value_changed.emit()
+
+    def remove_pattern(self, pattern):
+        '''Remove the given pattern from the set
+        '''
+        self.layout.removeRow(pattern)
+        self.value_changed.emit()
+
+    def get_values(self):
+        '''Get the values of the contained OAM patterns and return
+        them in a list
+        '''
+        return [
+            self.layout.itemAt(i).widget().wrapped.get_values()
+            for i in range(self.layout.count())
+        ]
 
 
 class XYController(QGroupBox):
@@ -109,10 +169,20 @@ class XYController(QGroupBox):
                 self.y.setValue(value)
 
 
+class SLMController(QWidget):
+    '''A controller for a single SLM
+    '''
+    def __init__(self, screens):
+        '''Pass a list of screens to allow this to select what screen a
+        pattern is displayed on
+        '''
+
+
 if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
     a = QApplication([])
-    c = OAMControls()
-    c.set_values(position=(2, 3), phase=30, ang_mom=3.124)
+    c = OAMControlSet()
+    c.add_new_oam_pattern()
+    c.add_new_oam_pattern()
     c.show()
     a.exec()
