@@ -87,11 +87,21 @@ class ZernikeControl(QWidget):
 
         self.setLayout(layout)
 
+    def get_value(self):
+        return self.coefficient.value()
+
+    def set_value(self, value):
+        self.coefficient.setValue(value)
+
 
 class ZernikeSet(QWidget):
     '''A controller for the first n Zernike polynomials (default is 6)
+
+    value_dict contains the zernike polynomial evaluated over the given X, Y
+    (from numpy.mgrid) at the indices
     '''
     value_dict = {}
+    controls = {}
 
     value_changed = pyqtSignal()
 
@@ -107,18 +117,44 @@ class ZernikeSet(QWidget):
         layout = QHBoxLayout()
 
         if poly_set is not None:
-            self.controls = [ZernikeControl(index) for index in poly_set]
+            for indices in poly_set:
+                self.controls[indices] = ZernikeControl(indices)
         else:
-            self.controls = [
-                ZernikeControl(index) for index in coefficients(poly_limit)
-            ]
+            for indices in coefficients(poly_limit):
+                self.controls[indices] = ZernikeControl(indices)
 
-        for c in self.controls:
-            self.value_dict[c.indices] = zernike_cartesian(*c.indices)(X, Y)
-            c.value_changed.connect(self.value_changed.emit)
-            layout.addWidget(c)
+        for indices, control in self.controls.items():
+            self.value_dict[indices] = zernike_cartesian(*indices)(X, Y)
+            control.value_changed.connect(self.value_changed.emit)
+            layout.addWidget(control)
 
         self.setLayout(layout)
+
+    def get_values(self):
+        '''Get the values contained and return a dictionary of
+        {indices, value}
+        '''
+        value_dict = {}
+        for i, c in self.controls.items():
+            value_dict[i] = c.get_value()
+
+        return value_dict
+
+    def set_values(self, *args):
+        '''Set the Zernike values from given dictionaries
+        '''
+        for dictionary in args:
+            for key, value in dictionary.items():
+                if key in self.controls.keys():
+                    self.controls[key].set_value(value)
+
+    def get_pattern(self):
+        '''Get the value of the pattern Σe^{iaZ}
+        '''
+        return np.exp(1j * np.sum([
+            c.coefficient.value() * self.value_dict[i]
+            for i, c in self.controls.items()
+        ], axis=0))
 
 
 if __name__ == '__main__':
@@ -129,4 +165,5 @@ if __name__ == '__main__':
     X, Y = np.meshgrid(x, y)
     a = ZernikeSet(X, Y)
     a.show()
+    print(a.get_pattern())
     app.exec()
