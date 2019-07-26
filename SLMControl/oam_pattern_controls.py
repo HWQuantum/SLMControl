@@ -95,10 +95,13 @@ class OAMControlSet(QWidget):
         self.setLayout(self.layout)
 
     @pyqtSlot()
-    def add_new_oam_pattern(self):
+    def add_new_oam_pattern(self, args=None):
         '''Add a new OAM pattern to the set
+        args is optionally the set of values to put into the SLM control
         '''
         controller = OAMControls()
+        if args is not None:
+            controller.set_values(args)
         controller.value_changed.connect(self.value_changed.emit)
 
         wrapped_controller = CloseWrapper(controller)

@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel, QGroupBox
+from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel, QGroupBox, QComboBox
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 import pyqtgraph as pg
 import numpy as np
@@ -22,6 +22,8 @@ class SLMDisplay():
         '''Set the screen the plot is to be displayed on
         '''
         self.screen = screen
+        self.window.screen_size = (self.screen.geometry().width(),
+                                   self.screen.geometry().height())
         self.window.windowHandle().setScreen(self.screen)
         self.window.showFullScreen()
 
@@ -161,7 +163,7 @@ class LUTController(QGroupBox):
             "max_value": self.max_value.value(),
             "max_clamp": self.max_clamp.value(),
             "min_clamp": self.min_clamp.value(),
-            }
+        }
 
     def set_values(self, *args, **kwargs):
         '''Set the values of this LUT controller
@@ -178,18 +180,37 @@ class LUTController(QGroupBox):
             except AttributeError:
                 pass
 
+
 class SLMController(QWidget):
     '''A controller for a single SLM
     '''
+
+    screens = None
+
     def __init__(self, screens):
         '''Pass a list of screens to allow this to select what screen a
         pattern is displayed on
         '''
         super().__init__()
+        self.screens = screens
+
         layout = QGridLayout()
-        l=LUTController()
-        l.set_values({'max_value': 10})
-        layout.addWidget(l)
+
+        screen_selector = QComboBox()
+
+        for i, screen in enumerate(screens):
+            screen_selector.addItem("Screen {}".format(i))
+
+        self.slm_window = SLMDisplay(screens[screen_selector.currentIndex()],
+                                     (500, 500))
+
+        screen_selector.currentIndexChanged.connect(
+            lambda _: self.slm_window.set_screen(self.screens[screen_selector.
+                                                              currentIndex()]))
+
+        layout.addWidget(QLabel("Display on:"), 0, 0)
+        layout.addWidget(screen_selector, 0, 1)
+
         self.setLayout(layout)
 
 
