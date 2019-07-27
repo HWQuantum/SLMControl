@@ -1,7 +1,9 @@
-from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel, QGroupBox, QComboBox
+from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel, QGroupBox, QComboBox, QScrollArea
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 import pyqtgraph as pg
 import numpy as np
+
+from oam_pattern_controls import OAMControlSet
 
 
 class SLMDisplay():
@@ -197,6 +199,10 @@ class SLMController(QWidget):
         layout = QGridLayout()
 
         screen_selector = QComboBox()
+        scroll_area = QScrollArea()
+        self.oam_controller = OAMControlSet()
+        scroll_area.setWidget(self.oam_controller)
+        scroll_area.setWidgetResizable(True)
 
         for i, screen in enumerate(screens):
             screen_selector.addItem("Screen {}".format(i))
@@ -210,8 +216,12 @@ class SLMController(QWidget):
 
         layout.addWidget(QLabel("Display on:"), 0, 0)
         layout.addWidget(screen_selector, 0, 1)
+        layout.addWidget(scroll_area, 1, 0, 1, 2)
 
         self.setLayout(layout)
+
+        for i in range(10):
+            self.oam_controller.add_new_oam_pattern()
 
 
 if __name__ == '__main__':
