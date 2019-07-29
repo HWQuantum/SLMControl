@@ -115,7 +115,7 @@ class ZernikeSet(QGroupBox):
         '''
         super().__init__()
         self.setTitle("Zernike Controls")
-        layout = QHBoxLayout()
+        self.layout = QHBoxLayout()
 
         if poly_set is not None:
             for indices in poly_set:
@@ -124,12 +124,18 @@ class ZernikeSet(QGroupBox):
             for indices in coefficients(poly_limit):
                 self.controls[indices] = ZernikeControl(indices)
 
+        self.generate_polynomials(X, Y)
+
+        self.setLayout(self.layout)
+
+    def generate_polynomials(self, X, Y):
+        '''Generate the polynomials over the given X and Ys
+        '''
         for indices, control in self.controls.items():
             self.value_dict[indices] = zernike_cartesian(*indices)(X, Y)
             control.value_changed.connect(self.value_changed.emit)
-            layout.addWidget(control)
+            self.layout.addWidget(control)
 
-        self.setLayout(layout)
 
     def get_values(self):
         '''Get the values contained and return a dictionary of

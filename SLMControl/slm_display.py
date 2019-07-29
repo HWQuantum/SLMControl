@@ -27,6 +27,7 @@ class SLMDisplay():
         self.screen = screen
         self.window.screen_size = (self.screen.geometry().width(),
                                    self.screen.geometry().height())
+        self.window.set_limits()
         self.window.windowHandle().setScreen(self.screen)
         self.window.showFullScreen()
 
@@ -97,6 +98,12 @@ class FullScreenPlot(pg.PlotWidget):
         '''Update the lookup table for the plot
         '''
         self.image_display.setLookupTable(LUT)
+
+    def update_SLM_size(self, size):
+        '''Update the display size of the slm
+        '''
+        self.slm_display_size = size
+        self.set_limits()
 
 
 class LUTController(QGroupBox):
@@ -190,17 +197,16 @@ class SLMController(QWidget):
 
     screens = None
 
-    def __init__(self, screens):
+    def __init__(self, screens, slm_size):
         '''Pass a list of screens to allow this to select what screen a
         pattern is displayed on
+        Pass slm_size to set the size of the slm to display on (how many pixels it has)
         '''
         super().__init__()
         self.screens = screens
 
         layout = QGridLayout()
-        x = np.linspace(-1, 1, 500)
-        y = np.linspace(-1, 1, 500)
-        self.x, self.y = np.meshgrid(x, y)
+        self.x, self.y = np.mgrid[-1:1:slm_size[0]*1j, -1:1:slm_size[1]*1j]
 
         screen_selector = QComboBox()
         oam_scroll_area = QScrollArea()
@@ -208,7 +214,7 @@ class SLMController(QWidget):
         add_controller_button = QPushButton("Add OAM control")
 
         self.oam_controller = OAMControlSet()
-        self.plot = FullScreenPlot((500, 500), (500, 500))
+        self.plot = FullScreenPlot(slm_size, slm_size))
         self.lut_controller = LUTController()
         self.zernike_controller = ZernikeSet(self.x, self.y, [(2, 2), (0, 2),
                                                               (-2, 2)])
@@ -223,7 +229,7 @@ class SLMController(QWidget):
             screen_selector.addItem("Screen {}".format(i))
 
         self.slm_window = SLMDisplay(screens[screen_selector.currentIndex()],
-                                     (500, 500))
+                                     slm_size)
 
         screen_selector.currentIndexChanged.connect(
             lambda _: self.slm_window.set_screen(self.screens[screen_selector.
@@ -233,7 +239,8 @@ class SLMController(QWidget):
         self.oam_controller.value_changed.connect(self.update_image)
         self.zernike_controller.value_changed.connect(self.update_image)
         self.diffraction_grating.value_changed.connect(self.update_image)
-        add_controller_button.clicked.connect(self.oam_controller.add_new_oam_pattern)
+        add_controller_button.clicked.connect(
+            self.oam_controller.add_new_oam_pattern)
 
         layout.addWidget(QLabel("Display on:"), 0, 0)
         layout.addWidget(screen_selector, 0, 1)
@@ -271,10 +278,20 @@ class SLMController(QWidget):
         self.plot.set_and_update_image(new_image)
         self.slm_window.set_image(new_image)
 
+    def set_slm_size(self, size):
+        '''Set the size of the slm to display on in pixels
+        size is a tuple, eg: (500, 500)
+        '''
+        self.x, self.y = np.mgrid[-1:1:size[0]*1j, -1:1:size[1]*1j]
+        self.slm_window.window.update_SLM_size(size)
+        self.plot.screen_size = size
+        self.plot.update_SLM_size(size)
+        self.zernike_controller.generate_polynomials(self.x, self.y)
+
 
 if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
     app = QApplication([])
-    w = SLMController(app.screens())
+    w = SLMController(app.screens(), (500, 500))
     w.show()
     app.exec()
