@@ -69,8 +69,6 @@ class OAMControls(QWidget):
 class CloseWrapper(QGroupBox):
     close = pyqtSignal()
 
-    wrapped_widget = None
-
     def __init__(self, other_widget):
         super().__init__()
         self.wrapped = other_widget
@@ -177,13 +175,3 @@ class XYController(QGroupBox):
                 self.x.setValue(value)
             elif key == 'y':
                 self.y.setValue(value)
-
-
-if __name__ == '__main__':
-    from PyQt5.QtWidgets import QApplication
-    a = QApplication([])
-    c = OAMControlSet()
-    c.add_new_oam_pattern()
-    c.add_new_oam_pattern()
-    c.show()
-    a.exec()

@@ -72,7 +72,6 @@ class ZernikeControl(QWidget):
     '''A controller for a single zernike coefficient
     '''
     value_changed = pyqtSignal()
-    indices = (0, 0)
 
     def __init__(self, indices, value=0):
         super().__init__()
@@ -100,8 +99,6 @@ class ZernikeSet(QGroupBox):
     value_dict contains the zernike polynomial evaluated over the given X, Y
     (from numpy.mgrid) at the indices
     '''
-    value_dict = {}
-    controls = {}
 
     value_changed = pyqtSignal()
 
@@ -116,6 +113,8 @@ class ZernikeSet(QGroupBox):
         super().__init__()
         self.setTitle("Zernike Controls")
         self.layout = QHBoxLayout()
+        self.value_dict = {}
+        self.controls = {}
 
         if poly_set is not None:
             for indices in poly_set:
