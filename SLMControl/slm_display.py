@@ -200,7 +200,8 @@ class SLMController(QWidget):
     def __init__(self, screens, slm_size):
         '''Pass a list of screens to allow this to select what screen a
         pattern is displayed on
-        Pass slm_size to set the size of the slm to display on (how many pixels it has)
+        Pass slm_size to set the size of the slm to display on
+        (how many pixels it has)
         '''
         super().__init__()
         self.screens = screens
@@ -214,7 +215,7 @@ class SLMController(QWidget):
         add_controller_button = QPushButton("Add OAM control")
 
         self.oam_controller = OAMControlSet()
-        self.plot = FullScreenPlot(slm_size, slm_size))
+        self.plot = FullScreenPlot(slm_size, slm_size)
         self.lut_controller = LUTController()
         self.zernike_controller = ZernikeSet(self.x, self.y, [(2, 2), (0, 2),
                                                               (-2, 2)])
