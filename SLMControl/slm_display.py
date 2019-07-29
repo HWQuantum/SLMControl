@@ -259,11 +259,10 @@ class SLMController(QWidget):
         '''
         diff_x, diff_y = self.diffraction_grating.get_values()
         zernike_image = self.zernike_controller.get_pattern()
-        self.diffraction_grating.get_values
         oam_image = np.sum([
             p["amplitude"] *
             np.exp(1j * ((p["ang_mom"] * np.arctan2(
-                self.y - p["position"][0], self.x - p["position"][1])) +
+                self.y - p["position"][1], self.x - p["position"][0])) +
                          (diff_x * self.x + diff_y * self.y) + p["phase"]))
             for p in self.oam_controller.get_values()
         ],
