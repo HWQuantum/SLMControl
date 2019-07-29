@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel, QGroupBox, QComboBox, QScrollArea, QPushButton
+from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel, QGroupBox, QComboBox, QScrollArea, QPushButton, QTabWidget
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 import pyqtgraph as pg
 import numpy as np
@@ -207,7 +207,8 @@ class SLMController(QWidget):
         self.screens = screens
 
         layout = QGridLayout()
-        self.x, self.y = np.mgrid[-1:1:slm_size[0]*1j, -1:1:slm_size[1]*1j]
+        print(slm_size)
+        self.x, self.y = np.mgrid[-1:1:(slm_size[0]*1j), -1:1:(slm_size[1]*1j)]
 
         screen_selector = QComboBox()
         oam_scroll_area = QScrollArea()
@@ -283,16 +284,24 @@ class SLMController(QWidget):
         '''Set the size of the slm to display on in pixels
         size is a tuple, eg: (500, 500)
         '''
-        self.x, self.y = np.mgrid[-1:1:size[0]*1j, -1:1:size[1]*1j]
+        self.x, self.y = np.mgrid[-1:1:(size[0]*1j), -1:1:(size[1]*1j)]
         self.slm_window.window.update_SLM_size(size)
         self.plot.screen_size = size
         self.plot.update_SLM_size(size)
         self.zernike_controller.generate_polynomials(self.x, self.y)
 
+class MultiSLMController(QTabWidget):
+    '''Class to control multiple SLMs
+    '''
+    def __init__(self, screens, slm_size_list):
+        super().__init__()
+        for i, slm_screen in enumerate(slm_size_list):
+            self.addTab(SLMController(screens, slm_screen), "SLM {}".format(i))
+
 
 if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
     app = QApplication([])
-    w = SLMController(app.screens(), (500, 500))
+    w = MultiSLMController(app.screens(), [(500, 500), (500, 500)])
     w.show()
     app.exec()
