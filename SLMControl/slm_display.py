@@ -12,7 +12,11 @@ class SLMDisplay():
     '''
     screen = None
 
-    def __init__(self, screen, slm_display_size=None, slm_position=(0, 0)):
+    def __init__(self,
+                 window_title,
+                 screen,
+                 slm_display_size=None,
+                 slm_position=(0, 0)):
         self.screen = screen
 
         self.window = FullScreenPlot(
@@ -20,6 +24,7 @@ class SLMDisplay():
             slm_display_size, slm_position)
 
         self.window.showFullScreen()
+        self.window.setWindowTitle(window_title)
 
     def set_screen(self, screen):
         '''Set the screen the plot is to be displayed on
@@ -197,7 +202,7 @@ class SLMController(QWidget):
 
     screens = None
 
-    def __init__(self, screens, slm_size):
+    def __init__(self, window_title, screens, slm_size):
         '''Pass a list of screens to allow this to select what screen a
         pattern is displayed on
         Pass slm_size to set the size of the slm to display on
@@ -207,7 +212,6 @@ class SLMController(QWidget):
         self.screens = screens
 
         layout = QGridLayout()
-        print(slm_size)
         self.x, self.y = np.mgrid[-1:1:(slm_size[0] * 1j), -1:1:(slm_size[1] *
                                                                  1j)]
 
@@ -231,7 +235,8 @@ class SLMController(QWidget):
         for i, screen in enumerate(screens):
             screen_selector.addItem("Screen {}".format(i))
 
-        self.slm_window = SLMDisplay(screens[screen_selector.currentIndex()],
+        self.slm_window = SLMDisplay(window_title,
+                                     screens[screen_selector.currentIndex()],
                                      slm_size)
 
         screen_selector.currentIndexChanged.connect(
@@ -298,7 +303,8 @@ class MultiSLMController(QTabWidget):
     def __init__(self, screens, slm_size_list):
         super().__init__()
         for i, slm_screen in enumerate(slm_size_list):
-            self.addTab(SLMController(screens, slm_screen), "SLM {}".format(i))
+            title = "SLM {}".format(i)
+            self.addTab(SLMController(title, screens, slm_screen), title)
 
 
 if __name__ == '__main__':
