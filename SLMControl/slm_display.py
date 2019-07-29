@@ -208,7 +208,8 @@ class SLMController(QWidget):
 
         layout = QGridLayout()
         print(slm_size)
-        self.x, self.y = np.mgrid[-1:1:(slm_size[0]*1j), -1:1:(slm_size[1]*1j)]
+        self.x, self.y = np.mgrid[-1:1:(slm_size[0] * 1j), -1:1:(slm_size[1] *
+                                                                 1j)]
 
         screen_selector = QComboBox()
         oam_scroll_area = QScrollArea()
@@ -284,11 +285,12 @@ class SLMController(QWidget):
         '''Set the size of the slm to display on in pixels
         size is a tuple, eg: (500, 500)
         '''
-        self.x, self.y = np.mgrid[-1:1:(size[0]*1j), -1:1:(size[1]*1j)]
+        self.x, self.y = np.mgrid[-1:1:(size[0] * 1j), -1:1:(size[1] * 1j)]
         self.slm_window.window.update_SLM_size(size)
         self.plot.screen_size = size
         self.plot.update_SLM_size(size)
         self.zernike_controller.generate_polynomials(self.x, self.y)
+
 
 class MultiSLMController(QTabWidget):
     '''Class to control multiple SLMs
