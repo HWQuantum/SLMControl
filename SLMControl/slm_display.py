@@ -1,9 +1,10 @@
-from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel, QGroupBox, QComboBox, QScrollArea
+from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel, QGroupBox, QComboBox, QScrollArea, QPushButton
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 import pyqtgraph as pg
 import numpy as np
 
-from oam_pattern_controls import OAMControlSet
+from oam_pattern_controls import OAMControlSet, XYController
+from zernike_controls import ZernikeSet
 
 
 class SLMDisplay():
@@ -197,12 +198,26 @@ class SLMController(QWidget):
         self.screens = screens
 
         layout = QGridLayout()
+        x = np.linspace(-1, 1, 500)
+        y = np.linspace(-1, 1, 500)
+        self.x, self.y = np.meshgrid(x, y)
 
         screen_selector = QComboBox()
-        scroll_area = QScrollArea()
+        oam_scroll_area = QScrollArea()
+        zernike_scroll_area = QScrollArea()
+        add_controller_button = QPushButton("Add OAM control")
+
         self.oam_controller = OAMControlSet()
-        scroll_area.setWidget(self.oam_controller)
-        scroll_area.setWidgetResizable(True)
+        self.plot = FullScreenPlot((500, 500), (500, 500))
+        self.lut_controller = LUTController()
+        self.zernike_controller = ZernikeSet(self.x, self.y, [(2, 2), (0, 2),
+                                                              (-2, 2)])
+        self.diffraction_grating = XYController("Diffraction grating")
+
+        oam_scroll_area.setWidget(self.oam_controller)
+        oam_scroll_area.setWidgetResizable(True)
+        zernike_scroll_area.setWidget(self.zernike_controller)
+        zernike_scroll_area.setWidgetResizable(True)
 
         for i, screen in enumerate(screens):
             screen_selector.addItem("Screen {}".format(i))
@@ -214,14 +229,48 @@ class SLMController(QWidget):
             lambda _: self.slm_window.set_screen(self.screens[screen_selector.
                                                               currentIndex()]))
 
+        self.lut_controller.value_changed.connect(self.update_LUT)
+        self.oam_controller.value_changed.connect(self.update_image)
+        self.zernike_controller.value_changed.connect(self.update_image)
+        self.diffraction_grating.value_changed.connect(self.update_image)
+        add_controller_button.clicked.connect(self.oam_controller.add_new_oam_pattern)
+
         layout.addWidget(QLabel("Display on:"), 0, 0)
         layout.addWidget(screen_selector, 0, 1)
-        layout.addWidget(scroll_area, 1, 0, 1, 2)
+        layout.addWidget(add_controller_button, 0, 2)
+        layout.addWidget(self.diffraction_grating, 0, 3)
+        layout.addWidget(oam_scroll_area, 1, 0, 1, 4)
+        layout.addWidget(self.plot, 2, 0, 1, 4)
+        layout.addWidget(self.lut_controller, 3, 0, 1, 1)
+        layout.addWidget(zernike_scroll_area, 3, 1, 1, 3)
 
         self.setLayout(layout)
 
-        for i in range(10):
+        for i in range(1):
             self.oam_controller.add_new_oam_pattern()
+
+    def update_LUT(self):
+        self.plot.update_LUT(self.lut_controller.get_LUT())
+        self.slm_window.window.update_LUT(self.lut_controller.get_LUT())
+
+    def update_image(self):
+        '''Update the image displayed on the oam plot and the
+        gui plot
+        '''
+        diff_x, diff_y = self.diffraction_grating.get_values()
+        zernike_image = self.zernike_controller.get_pattern()
+        self.diffraction_grating.get_values
+        oam_image = np.sum([
+            p["amplitude"] *
+            np.exp(1j * ((p["ang_mom"] * np.arctan2(
+                self.y - p["position"][0], self.x - p["position"][1])) +
+                         (diff_x * self.x + diff_y * self.y) + p["phase"]))
+            for p in self.oam_controller.get_values()
+        ],
+                           axis=0)
+        new_image = np.angle(zernike_image * oam_image)
+        self.plot.set_and_update_image(new_image)
+        self.slm_window.set_image(new_image)
 
 
 if __name__ == '__main__':

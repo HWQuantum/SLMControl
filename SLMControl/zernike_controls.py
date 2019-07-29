@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout
+from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QGroupBox
 from PyQt5.QtCore import pyqtSignal
 import pyqtgraph as pg
 import numpy as np
@@ -94,7 +94,7 @@ class ZernikeControl(QWidget):
         self.coefficient.setValue(value)
 
 
-class ZernikeSet(QWidget):
+class ZernikeSet(QGroupBox):
     '''A controller for the first n Zernike polynomials (default is 6)
 
     value_dict contains the zernike polynomial evaluated over the given X, Y
@@ -114,6 +114,7 @@ class ZernikeSet(QWidget):
         made from numpy's mgrid function
         '''
         super().__init__()
+        self.setTitle("Zernike Controls")
         layout = QHBoxLayout()
 
         if poly_set is not None:
