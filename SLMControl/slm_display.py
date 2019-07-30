@@ -308,15 +308,25 @@ class SLMController(QWidget):
         self.plot.update_SLM_size(size)
         self.zernike_controller.generate_polynomials(self.x, self.y)
 
+    def close_slm_window(self):
+        self.slm_window.window.close()
+
 
 class MultiSLMController(QTabWidget):
     '''Class to control multiple SLMs
     '''
     def __init__(self, screens, slm_size_list):
         super().__init__()
+        self.slm_tabs = []
         for i, slm_screen in enumerate(slm_size_list):
             title = "SLM {}".format(i)
-            self.addTab(SLMController(title, screens, slm_screen), title)
+            slm_tab = SLMController(title, screens, slm_screen)
+            self.addTab(slm_tab, title)
+            self.slm_tabs.append(slm_tab)
+
+    def closeEvent(self, event):
+        for tab in self.slm_tabs:
+            tab.close_slm_window()
 
 
 if __name__ == '__main__':
