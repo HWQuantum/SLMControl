@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QGroupBox
 from PyQt5.QtCore import pyqtSignal
 import pyqtgraph as pg
 import numpy as np
+from ast import literal_eval as make_tuple
 
 
 def radial_coeff(m, n, l):
@@ -135,22 +136,24 @@ class ZernikeSet(QGroupBox):
             control.value_changed.connect(self.value_changed.emit)
             self.layout.addWidget(control)
 
-
     def get_values(self):
         '''Get the values contained and return a dictionary of
-        {indices, value}
+        {indices, value} with indices a string instead of a tuple
         '''
         value_dict = {}
         for i, c in self.controls.items():
-            value_dict[i] = c.get_value()
+            value_dict["({},{})".format(*i)] = c.get_value()
 
         return value_dict
 
     def set_values(self, *args):
-        '''Set the Zernike values from given dictionaries
+        '''Set the Zernike values from given dictionaries, converting string
+        indices into values
         '''
         for dictionary in args:
             for key, value in dictionary.items():
+                if type(key) == str:
+                    key = make_tuple(key)
                 if key in self.controls.keys():
                     self.controls[key].set_value(value)
 
@@ -160,7 +163,8 @@ class ZernikeSet(QGroupBox):
         return np.exp(1j * np.sum([
             c.coefficient.value() * self.value_dict[i]
             for i, c in self.controls.items()
-        ], axis=0))
+        ],
+                                  axis=0))
 
     def reset_coefficients(self):
         '''Reset all coefficients to 0

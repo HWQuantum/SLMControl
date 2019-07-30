@@ -2,10 +2,10 @@ from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel, QGroupBox, QComboBox, 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 import pyqtgraph as pg
 import numpy as np
+import json
 
 from oam_pattern_controls import OAMControlSet, XYController
 from zernike_controls import ZernikeSet
-
 
 class SLMDisplay():
     '''Class to display an SLM pattern fullscreen onto a monitor
@@ -273,8 +273,7 @@ class SLMController(QWidget):
 
         self.setLayout(layout)
 
-        for i in range(1):
-            self.oam_controller.add_new_oam_pattern()
+        self.oam_controller.add_new_oam_pattern()
 
     def update_LUT(self):
         self.plot.update_LUT(self.lut_controller.get_LUT())
@@ -310,6 +309,38 @@ class SLMController(QWidget):
 
     def close_slm_window(self):
         self.slm_window.window.close()
+
+    def get_values(self):
+        '''Get a dictionary of values for the contained widgets
+        '''
+        return {
+            "oam_controller": self.oam_controller.get_values(),
+            "zernike_controller": self.zernike_controller.get_values(),
+            "lut_controller": self.lut_controller.get_values(),
+            "diffraction_grating": self.diffraction_grating.get_values(),
+            }
+
+    def set_values(self, *args, **kwargs):
+        '''Set the values of the SLM display from a set of args and kwargs
+        Expects values for:
+        oam_controller,
+        zernike_controller,
+        lut_controller,
+        diffraction_grating
+        '''
+        for dictionary in args:
+            for key, value in dictionary.items():
+                try:
+                    print(key)
+                    getattr(self, key).set_values(value)
+                except AttributeError:
+                    pass
+
+        for key, value in kwargs.items():
+            try:
+                getattr(self, key).set_values(value)
+            except AttributeError:
+                pass
 
 
 class MultiSLMController(QTabWidget):

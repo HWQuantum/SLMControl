@@ -131,6 +131,16 @@ class OAMControlSet(QWidget):
             for i in range(self.layout.count())
         ]
 
+    def set_values(self, patterns):
+        '''This function takes a list of dictionaries containing
+        OAM pattern values.
+        It removes the current patterns and creates new patterns
+        according to the given values
+        '''
+        self.remove_all_rows()
+        for args in patterns:
+            self.add_new_oam_pattern(args)
+
 
 class XYController(QGroupBox):
     '''Define a control for x and y position
