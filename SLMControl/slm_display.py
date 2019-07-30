@@ -10,8 +10,6 @@ from zernike_controls import ZernikeSet
 class SLMDisplay():
     '''Class to display an SLM pattern fullscreen onto a monitor
     '''
-    screen = None
-
     def __init__(self,
                  window_title,
                  screen,
@@ -19,22 +17,39 @@ class SLMDisplay():
                  slm_position=(0, 0)):
         self.screen = screen
 
+        self.window = None
+        self.create_screen(screen, slm_display_size, slm_position,
+                           window_title)
+
+    def set_screen(self, screen):
+        '''Set the screen the plot is to be displayed on
+        destroys the current window, and creates a new one with the same values
+        '''
+        slm_display_size = self.window.slm_display_size
+        slm_position = self.window.slm_position
+        image = self.window.image
+        window_title = self.window.windowTitle()
+
+        self.create_screen(screen, slm_display_size, slm_position,
+                           window_title)
+        self.window.set_and_update_image(image)
+
+    def create_screen(self, screen, slm_display_size, slm_position,
+                      window_title):
+        '''Create a screen'''
+        self.screen = screen
+
+        if self.window is not None:
+            self.window.close()
+
         self.window = FullScreenPlot(
             (screen.geometry().width(), screen.geometry().height()),
             slm_display_size, slm_position)
 
+        self.window.show()
+        self.window.windowHandle().setScreen(screen)
         self.window.showFullScreen()
         self.window.setWindowTitle(window_title)
-
-    def set_screen(self, screen):
-        '''Set the screen the plot is to be displayed on
-        '''
-        self.screen = screen
-        self.window.screen_size = (self.screen.geometry().width(),
-                                   self.screen.geometry().height())
-        self.window.set_limits()
-        self.window.windowHandle().setScreen(self.screen)
-        self.window.showFullScreen()
 
     @pyqtSlot(np.ndarray)
     def set_image(self, image):
@@ -46,11 +61,6 @@ class SLMDisplay():
 class FullScreenPlot(pg.PlotWidget):
     '''Class to display a numpy array as a fullscreen plot
     '''
-    screen_size = None
-    slm_display_size = None
-    slm_position = None
-    image = None
-
     def __init__(self, screen_size, slm_display_size=None,
                  slm_position=(0, 0)):
         '''Take in the screen size which to plot to, the slm display size if
@@ -60,6 +70,11 @@ class FullScreenPlot(pg.PlotWidget):
         The slm position is taken from the top-left corner of the image
         '''
         super().__init__()
+
+        self.screen_size = None
+        self.slm_display_size = None
+        self.slm_position = None
+        self.image = None
 
         # update the size parameters
         if slm_display_size is None:
@@ -199,9 +214,6 @@ class LUTController(QGroupBox):
 class SLMController(QWidget):
     '''A controller for a single SLM
     '''
-
-    screens = None
-
     def __init__(self, window_title, screens, slm_size):
         '''Pass a list of screens to allow this to select what screen a
         pattern is displayed on
