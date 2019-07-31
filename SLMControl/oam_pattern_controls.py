@@ -119,7 +119,7 @@ class OAMControlSet(QWidget):
     def remove_all_rows(self):
         '''Self explanatory
         '''
-        for i in range(self.layout.rowCount()):
+        while self.layout.rowCount() > 0:
             self.removeRow(0)
         self.value_changed.emit()
 
