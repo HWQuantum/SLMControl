@@ -120,7 +120,7 @@ class OAMControlSet(QWidget):
         '''Self explanatory
         '''
         while self.layout.rowCount() > 0:
-            self.removeRow(0)
+            self.layout.removeRow(0)
         self.value_changed.emit()
 
     def get_values(self):
