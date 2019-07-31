@@ -209,6 +209,7 @@ class LUTController(QGroupBox):
                 getattr(self, key).setValue(value)
             except AttributeError:
                 pass
+        self.value_changed.emit()
 
 
 class SLMController(QWidget):
@@ -331,7 +332,6 @@ class SLMController(QWidget):
         for dictionary in args:
             for key, value in dictionary.items():
                 try:
-                    print(key)
                     getattr(self, key).set_values(value)
                 except AttributeError:
                     pass
@@ -355,9 +355,48 @@ class MultiSLMController(QTabWidget):
             self.addTab(slm_tab, title)
             self.slm_tabs.append(slm_tab)
 
+        self.read_values_from_json_file('./test_data.json')
+
     def closeEvent(self, event):
         for tab in self.slm_tabs:
             tab.close_slm_window()
+
+    def get_values(self):
+        '''Returns a list of slm settings
+        ready and prepared to be tucked in a json
+        '''
+        return [slm_screen.get_values() for slm_screen in self.slm_tabs]
+
+    def set_values(self, slm_list):
+        '''Accepts a list of slm settings
+        '''
+        for i, slm in enumerate(slm_list):
+            if i < len(self.slm_tabs):
+                self.slm_tabs[i].set_values(slm)
+
+    def save_values_to_json_file(self, filename):
+        '''Save the values to a given filename
+        doesn't catch any errors
+        '''
+        values = self.get_values()
+        with open(filename, 'w') as f:
+            json.dump(values, f)
+
+    def read_values_from_json_file(self, filename):
+        '''Read the values from a given filename
+        doesn't catch any errors
+        '''
+        with open(filename, 'r') as f:
+            self.set_values(json.load(f))
+
+    def try_read_values_from_json_file(self, filename):
+        '''wraps reading values in a try except thing,
+        so it doesn't fail when reading a naughty file
+        '''
+        try:
+            self.read_values_from_json_file(filename)
+        except:
+            pass
 
 
 if __name__ == '__main__':

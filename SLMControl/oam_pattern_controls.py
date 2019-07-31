@@ -64,6 +64,7 @@ class OAMControls(QWidget):
                 self.phase.setValue(value)
             elif key == "position":
                 self.position.set_values(value)
+        self.value_changed.emit()
 
 
 class CloseWrapper(QGroupBox):
