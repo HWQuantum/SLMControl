@@ -418,7 +418,7 @@ class MultiSLMController(QWidget):
         filename, _ = QFileDialog.getSaveFileName(self, "Save file", "")
         if filename:
             self.save_values_to_json_file(filename)
-            
+
 
 if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
