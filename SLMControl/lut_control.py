@@ -1,7 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QFormLayout, QGridLayout, QScrollArea, QPushButton
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 import pyqtgraph as pg
-from scipy.interpolate import CubicSpline, BSpline
 import numpy as np
 
 from oam_pattern_controls import XYController, CloseWrapper
