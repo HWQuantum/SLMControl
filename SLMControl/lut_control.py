@@ -92,7 +92,6 @@ class LUTWidget(QWidget):
         self.layout = QGridLayout()
 
         self.points_widget = LUTPoints(points)
-        print(points)
         self.add_point = QPushButton("Add LUT Point")
         scroll_area = QScrollArea()
         scroll_area.setWidget(self.points_widget)
