@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel, QGroupBox, QComboBox, QScrollArea, QPushButton, QTabWidget
+from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel, QGroupBox, QComboBox, QScrollArea, QPushButton, QTabWidget, QFileDialog
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 import pyqtgraph as pg
 import numpy as np
@@ -343,19 +343,30 @@ class SLMController(QWidget):
                 pass
 
 
-class MultiSLMController(QTabWidget):
+class MultiSLMController(QWidget):
     '''Class to control multiple SLMs
     '''
     def __init__(self, screens, slm_size_list):
         super().__init__()
         self.slm_tabs = []
+        self.tab_widget = QTabWidget()
         for i, slm_screen in enumerate(slm_size_list):
             title = "SLM {}".format(i)
             slm_tab = SLMController(title, screens, slm_screen)
-            self.addTab(slm_tab, title)
+            self.tab_widget.addTab(slm_tab, title)
             self.slm_tabs.append(slm_tab)
+        self.layout = QGridLayout()
+        save_button = QPushButton("Save values")
+        load_button = QPushButton("Load values")
 
-        self.read_values_from_json_file('./test_data.json')
+        self.layout.addWidget(save_button, 0, 0)
+        self.layout.addWidget(load_button, 0, 1)
+        self.layout.addWidget(self.tab_widget, 1, 0, 1, 2)
+        self.setLayout(self.layout)
+
+        save_button.clicked.connect(self.save_file)
+        load_button.clicked.connect(self.open_file)
+
 
     def closeEvent(self, event):
         for tab in self.slm_tabs:
@@ -398,6 +409,16 @@ class MultiSLMController(QTabWidget):
         except:
             pass
 
+    def open_file(self):
+        filename, _ = QFileDialog.getOpenFileName(self, "Open File", "")
+        if filename:
+            self.try_read_values_from_json_file(filename)
+
+    def save_file(self):
+        filename, _ = QFileDialog.getSaveFileName(self, "Save file", "")
+        if filename:
+            self.save_values_to_json_file(filename)
+            
 
 if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
