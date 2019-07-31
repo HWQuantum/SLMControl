@@ -1,10 +1,12 @@
 from PyQt5.QtWidgets import QWidget, QFormLayout, QGridLayout, QScrollArea, QPushButton
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 import pyqtgraph as pg
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline, BSpline
 import numpy as np
 
 from oam_pattern_controls import XYController, CloseWrapper
+
+LUT_plot_xs = np.linspace(-np.pi, np.pi, 100)
 
 
 class LUTPoints(QWidget):
@@ -61,7 +63,7 @@ class LUTPoints(QWidget):
         index = 0
         while index < len(vals):
             if index != 0:
-                if vals[index][0] == vals[index-1][0]:
+                if vals[index][0] == vals[index - 1][0]:
                     vals.pop(index)
                 else:
                     index += 1
@@ -95,7 +97,20 @@ class LUTWidget(QWidget):
         scroll_area.setWidgetResizable(True)
 
         self.plot = pg.PlotWidget()
+        self.plot.setLimits(xMin=-np.pi-0.1,
+                            xMax=np.pi+0.1,
+                            yMin=0-3,
+                            yMax=255+3,
+                            minXRange=2 * np.pi+0.2,
+                            maxXRange=2 * np.pi+0.2,
+                            minYRange=255+6,
+                            maxYRange=255+6)
         self.plot_line = self.plot.plot()
+        self.plot_points = pg.ScatterPlotItem(size=10,
+                                              pen=pg.mkPen(None),
+                                              brush=pg.mkBrush(
+                                                  255, 255, 255, 120))
+        self.plot.addItem(self.plot_points)
 
         self.add_point.clicked.connect(self.points_widget.add_point)
 
@@ -110,8 +125,8 @@ class LUTWidget(QWidget):
         if len(points) >= 2:
             xs = [p[0] for p in points]
             ys = [p[1] for p in points]
-            spline = CubicSpline(xs, ys)
-            self.plot_line.setData(x=xs, y=ys)
+            self.plot_line.setData(LUT_plot_xs, np.interp(LUT_plot_xs, xs, ys))
+            self.plot_points.setData(xs, ys)
 
 
 if __name__ == '__main__':
