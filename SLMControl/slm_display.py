@@ -6,6 +6,8 @@ import json
 
 from oam_pattern_controls import OAMControlSet, XYController
 from zernike_controls import ZernikeSet
+from lut_control import LUTWidget
+
 
 class SLMDisplay():
     '''Class to display an SLM pattern fullscreen onto a monitor
@@ -212,6 +214,15 @@ class LUTController(QGroupBox):
         self.value_changed.emit()
 
 
+def points_to_lut(points):
+    '''Converts a set of points into a LUT for pyqtgraph
+    '''
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
+    lut = np.interp(np.linspace(-np.pi, np.pi, 255), xs, ys)
+    return lut
+
+
 class SLMController(QWidget):
     '''A controller for a single SLM
     '''
@@ -235,10 +246,12 @@ class SLMController(QWidget):
 
         self.oam_controller = OAMControlSet()
         self.plot = FullScreenPlot(slm_size, slm_size)
-        self.lut_controller = LUTController()
         self.zernike_controller = ZernikeSet(self.x, self.y, [(2, 2), (0, 2),
                                                               (-2, 2)])
+        self.lut_control = None
+        self.lut_control_button = QPushButton("Open LUT controls")
         self.diffraction_grating = XYController("Diffraction grating")
+        self.lut_list = [(-np.pi, 0), (np.pi, 255)]
 
         oam_scroll_area.setWidget(self.oam_controller)
         oam_scroll_area.setWidgetResizable(True)
@@ -256,29 +269,45 @@ class SLMController(QWidget):
             lambda _: self.slm_window.set_screen(self.screens[screen_selector.
                                                               currentIndex()]))
 
-        self.lut_controller.value_changed.connect(self.update_LUT)
         self.oam_controller.value_changed.connect(self.update_image)
         self.zernike_controller.value_changed.connect(self.update_image)
         self.diffraction_grating.value_changed.connect(self.update_image)
         add_controller_button.clicked.connect(
             self.oam_controller.add_new_oam_pattern)
+        self.lut_control_button.clicked.connect(self.open_lut_control)
 
-        layout.addWidget(QLabel("Display on:"), 0, 0)
-        layout.addWidget(screen_selector, 0, 1)
-        layout.addWidget(add_controller_button, 0, 2)
+        layout.addWidget(QLabel("Display on:"), 0, 1)
+        layout.addWidget(screen_selector, 0, 2)
+        layout.addWidget(add_controller_button, 0, 0)
         layout.addWidget(self.diffraction_grating, 0, 3)
-        layout.addWidget(oam_scroll_area, 1, 0, 1, 4)
-        layout.addWidget(self.plot, 2, 0, 1, 4)
-        layout.addWidget(self.lut_controller, 3, 0, 1, 1)
+        layout.addWidget(oam_scroll_area, 1, 0, 1, 2)
+        layout.addWidget(self.plot, 1, 2, 1, 2)
+        layout.addWidget(self.lut_control_button, 3, 0, 1, 1)
         layout.addWidget(zernike_scroll_area, 3, 1, 1, 3)
 
         self.setLayout(layout)
 
         self.oam_controller.add_new_oam_pattern()
 
-    def update_LUT(self):
-        self.plot.update_LUT(self.lut_controller.get_LUT())
-        self.slm_window.window.update_LUT(self.lut_controller.get_LUT())
+    def open_lut_control(self):
+        '''Open the LUT control if it's not open already
+        '''
+        if self.lut_control is None:
+            self.lut_control = LUTWidget(self.lut_list)
+            self.lut_control.value_changed.connect(self.update_LUT)
+            self.lut_control.closed.connect(self.remove_lut_control)
+            self.lut_control.show()
+
+    def remove_lut_control(self):
+        self.lut_control = None
+
+    @pyqtSlot(list)
+    def update_LUT(self, new_lut):
+        if len(new_lut) >= 2:
+            self.lut_list = new_lut
+            new_lut = points_to_lut(self.lut_list)
+            self.plot.update_LUT(new_lut)
+            self.slm_window.window.update_LUT(new_lut)
 
     def update_image(self):
         '''Update the image displayed on the oam plot and the
@@ -310,6 +339,8 @@ class SLMController(QWidget):
 
     def close_slm_window(self):
         self.slm_window.window.close()
+        if self.lut_control is not None:
+            self.lut_control.close()
 
     def get_values(self):
         '''Get a dictionary of values for the contained widgets
@@ -317,8 +348,8 @@ class SLMController(QWidget):
         return {
             "oam_controller": self.oam_controller.get_values(),
             "zernike_controller": self.zernike_controller.get_values(),
-            "lut_controller": self.lut_controller.get_values(),
             "diffraction_grating": self.diffraction_grating.get_values(),
+            "lut_list": self.lut_list,
             }
 
     def set_values(self, *args, **kwargs):
@@ -326,21 +357,27 @@ class SLMController(QWidget):
         Expects values for:
         oam_controller,
         zernike_controller,
-        lut_controller,
-        diffraction_grating
+        diffraction_grating,
+        lut_list,
         '''
         for dictionary in args:
             for key, value in dictionary.items():
+                if key == 'lut_list':
+                    self.update_LUT(value)
+                else:
+                    try:
+                        getattr(self, key).set_values(value)
+                    except AttributeError:
+                        pass
+
+        for key, value in kwargs.items():
+            if key == 'lut_list':
+                self.update_LUT(value)
+            else:
                 try:
                     getattr(self, key).set_values(value)
                 except AttributeError:
                     pass
-
-        for key, value in kwargs.items():
-            try:
-                getattr(self, key).set_values(value)
-            except AttributeError:
-                pass
 
 
 class MultiSLMController(QWidget):

@@ -177,7 +177,7 @@ class XYController(QGroupBox):
                         self.x.setValue(value)
                     elif key == 'y':
                         self.y.setValue(value)
-            elif type(arg) == tuple:
+            elif type(arg) == tuple or type(arg) == list:
                 self.x.setValue(arg[0])
                 self.y.setValue(arg[1])
 

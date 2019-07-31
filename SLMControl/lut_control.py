@@ -85,26 +85,28 @@ class LUTWidget(QWidget):
     '''Defines a lookup table
     '''
     value_changed = pyqtSignal(list)
+    closed = pyqtSignal()
 
     def __init__(self, points=[(-np.pi, 0), (np.pi, 255)]):
         super().__init__()
         self.layout = QGridLayout()
 
         self.points_widget = LUTPoints(points)
+        print(points)
         self.add_point = QPushButton("Add LUT Point")
         scroll_area = QScrollArea()
         scroll_area.setWidget(self.points_widget)
         scroll_area.setWidgetResizable(True)
 
         self.plot = pg.PlotWidget()
-        self.plot.setLimits(xMin=-np.pi-0.1,
-                            xMax=np.pi+0.1,
-                            yMin=0-3,
-                            yMax=255+3,
-                            minXRange=2 * np.pi+0.2,
-                            maxXRange=2 * np.pi+0.2,
-                            minYRange=255+6,
-                            maxYRange=255+6)
+        self.plot.setLimits(xMin=-np.pi - 0.1,
+                            xMax=np.pi + 0.1,
+                            yMin=0 - 3,
+                            yMax=255 + 3,
+                            minXRange=2 * np.pi + 0.2,
+                            maxXRange=2 * np.pi + 0.2,
+                            minYRange=255 + 6,
+                            maxYRange=255 + 6)
         self.plot_line = self.plot.plot()
         self.plot_points = pg.ScatterPlotItem(size=10,
                                               pen=pg.mkPen(None),
@@ -118,8 +120,12 @@ class LUTWidget(QWidget):
         self.layout.addWidget(scroll_area, 1, 0)
         self.layout.addWidget(self.plot, 0, 1, 2, 1)
         self.points_widget.value_changed.connect(lambda i: self.set_plot(i))
+        self.points_widget.value_changed.connect(
+            lambda i: self.value_changed.emit(i))
 
         self.setLayout(self.layout)
+
+        self.set_plot(self.points_widget.get_values())
 
     def set_plot(self, points):
         if len(points) >= 2:
@@ -127,6 +133,9 @@ class LUTWidget(QWidget):
             ys = [p[1] for p in points]
             self.plot_line.setData(LUT_plot_xs, np.interp(LUT_plot_xs, xs, ys))
             self.plot_points.setData(xs, ys)
+
+    def closeEvent(self, event):
+        self.closed.emit()
 
 
 if __name__ == '__main__':
