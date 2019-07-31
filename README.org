@@ -1,13 +1,12 @@
 * SLMControl
 A python library for controlling SLMs using PyQt5
 
-* TODO-LIST
-*** DONE Add in a saving/loading function
-   - this could be a right click context menu - right click on any widget to set the defaults/save a set
-*** DONE Add in the ability to change the lookup table at more points
-   - Make a list where more widgets can be added
-   - Maybe show the LUT on a little plot
-*** DONE Work on the opening windows on different desktops (it doesn't work correctly)
-*** DONE Make the slm windows close when the main widget closes
-*** DONE Have the ability to reshow the slm windows when closed/hidden
-*** TODO Have the ability to put zernike functions onto the beam? (add an amplitude or something)
+** Todos
+   - [X] Add in a saving/loading function
+   - [X] Add in the ability to change the lookup table at more points
+   - [X] Make a list where more LUT widgets can be added
+   - [X] Maybe show the LUT on a little plot
+   - [X] Work on the opening windows on different desktops (it doesn't work correctly)
+   - [X] Make the slm windows close when the main widget closes
+   - [X] Have the ability to reshow the slm windows when closed/hidden
+   - [ ] Have the ability to put zernike functions onto the beam? (add an amplitude or something)
