@@ -1,5 +1,18 @@
 * SLMControl
-A python library for controlling SLMs using PyQt5
+A cross-platform python library for controlling SLMs using (mostly) PyQt5.
+
+Contains a bunch of qt widgets which allow for controlling SLM screens,
+setting the lookup tables, setting zernike polynomial corrections,
+choosing which desktop they display on, etc...
+
+If want to control two SLMs there's a program already written for that.
+Just run SLMControl/slm_display.py, and it'll appear.
+
+** Requirements
+*** Python requirements
+    - PyQt5
+    - pyqtgraph
+    - numpy
 
 ** Todos
    - [X] Add in a saving/loading function
