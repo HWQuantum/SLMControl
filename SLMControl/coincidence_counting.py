@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QGridLayout, QTabWidget, QGroupBox, QLabel, QScrollArea, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QGridLayout, QTabWidget, QGroupBox, QLabel, QScrollArea, QHBoxLayout, QComboBox
 from PyQt5.QtCore import QThread, QObject, pyqtSignal, pyqtSlot
 import pyqtgraph as pg
 from time import sleep
@@ -21,16 +21,18 @@ class TestThread(QObject):
 
 
 class MeasurementThread(QObject):
-    measurement_done = pyqtSignal(list, list, list)
+    measurement_done = pyqtSignal(int, list, list, list)
 
     def __init__(self, device):
         super().__init__()
         self.dev = device
 
-    @pyqtSlot(int)
-    def run_measurement(self, time):
-        values = hhlib_sys.measure_and_get_counts(self.dev, time, 50000, 500, 0)
-        self.measurement_done.emit(*values)
+    @pyqtSlot(int, int, int, int)
+    def run_measurement(self, time, coincidence_window, bins, sync_channel):
+        values = hhlib_sys.measure_and_get_counts(self.dev, time,
+                                                  coincidence_window, bins,
+                                                  sync_channel)
+        self.measurement_done.emit(time, *values)
 
 
 class ChannelSetting(QGroupBox):
@@ -291,31 +293,107 @@ class DeviceMeasurement(QWidget):
         self.coincidence_plot = CoincidencePlot(100)
         self.singles_plot = SinglesPlot(100)
 
+        self.coincidences_value = pg.ValueLabel()
+        self.sync_singles = pg.ValueLabel()
+        self.other_singles = pg.ValueLabel()
+        self.sync_efficiency = pg.ValueLabel()
+        self.other_efficiency = pg.ValueLabel()
+        self.accidentals = pg.ValueLabel()
+        self.quantum_contrast = pg.ValueLabel()
+
+        self.coincidences_window = pg.SpinBox(value=50000,
+                                              int=True,
+                                              bounds=(0, None),
+                                              step=1)
+        self.histogram_bins = pg.SpinBox(value=100,
+                                         int=True,
+                                         bounds=(0, 1000),
+                                         step=1)
+
+        self.sync_channel = QComboBox()
+        self.sync_channel.addItems(["Sync"] +
+                                   ["Input {}".format(i) for i in range(8)])
+        self.other_channel = QComboBox()
+        self.other_channel.addItems(["Sync"] +
+                                    ["Input {}".format(i) for i in range(8)])
+
         self.run_measurement_button = QPushButton("Run measurement")
 
         self.run_measurement_button.setCheckable(True)
         self.run_measurement_button.clicked.connect(self.try_run_measurement)
         self.measurement_button_first_push = True
 
+        self.layout.addWidget(QLabel("Sync on channel:"), 0, 0)
+        self.layout.addWidget(self.sync_channel, 0, 1)
+        self.layout.addWidget(QLabel("Plot on channel:"), 1, 0)
+        self.layout.addWidget(self.other_channel, 1, 1)
+        self.layout.addWidget(QLabel("Coincidence window (ps):"), 2, 0)
+        self.layout.addWidget(self.coincidences_window, 2, 1)
+        self.layout.addWidget(QLabel("Histogram Bins:"), 3, 0)
+        self.layout.addWidget(self.histogram_bins, 3, 1)
+        self.layout.addWidget(QLabel("Measurement time (ms):"), 4, 0)
+        self.layout.addWidget(self.measurement_time, 4, 1)
+        self.layout.addWidget(self.run_measurement_button, 5, 0, 1, 2)
+        self.layout.addWidget(QLabel("Sync singles (1/s)"), 6, 0)
+        self.layout.addWidget(self.sync_singles, 6, 1)
+        self.layout.addWidget(QLabel("Other singles (1/s)"), 7, 0)
+        self.layout.addWidget(self.other_singles, 7, 1)
+        self.layout.addWidget(QLabel("Sync efficiency (%)"), 8, 0)
+        self.layout.addWidget(self.sync_efficiency, 8, 1)
+        self.layout.addWidget(QLabel("Other efficiency (%)"), 9, 0)
+        self.layout.addWidget(self.other_efficiency, 9, 1)
+        self.layout.addWidget(QLabel("Coincidences (1/s)"), 10, 0)
+        self.layout.addWidget(self.coincidences_value, 10, 1)
+        self.layout.addWidget(QLabel("Accidentals (1/s)"), 11, 0)
+        self.layout.addWidget(self.accidentals, 11, 1)
+        self.layout.addWidget(QLabel("Quantum contrast"), 12, 0)
+        self.layout.addWidget(self.quantum_contrast, 12, 1)
 
-        self.layout.addWidget(self.histogram_plot, 0, 0, 3, 1)
-        self.layout.addWidget(self.run_measurement_button, 0, 1)
-        self.layout.addWidget(self.measurement_time, 1, 1)
-        self.layout.addWidget(self.coincidence_plot, 3, 0, 2, 1)
-        self.layout.addWidget(self.singles_plot, 3, 1, 2, 1)
+        self.layout.addWidget(self.histogram_plot, 0, 3, 6, 2)
+        self.layout.addWidget(self.coincidence_plot, 6, 3, 4, 2)
+        self.layout.addWidget(self.singles_plot, 10, 3, 3, 2)
 
         self.setLayout(self.layout)
         self.setEnabled(False)
 
-    @pyqtSlot(list, list, list)
-    def update_data(self, singles, coincs, hists):
+    @pyqtSlot(int, list, list, list)
+    def update_data(self, time, singles, coincs, hists):
         '''Update the plots based on the counts data'''
-        self.histogram.setData(np.linspace(0, 1, len(hists[3])+1), hists[3])
-        self.coincidence_plot.add_new_value(coincs[3])
-        self.singles_plot.add_new_values([singles[0], singles[3]])
+        channel_1 = self.sync_channel.currentIndex()
+        channel_2 = self.other_channel.currentIndex()
+
+        singles_per_second_1 = singles[channel_1] / time * 1000
+        singles_per_second_2 = singles[channel_2] / time * 1000
+
+        coincidences_per_second = coincs[channel_2] / time * 1000
+
+        efficiency_1 = coincidences_per_second / singles_per_second_1 * 100
+        efficiency_2 = coincidences_per_second / singles_per_second_2 * 100
+
+        accidentals = singles_per_second_1 * singles_per_second_1 / (
+            80000000)  # for 80 MHz rep rate
+
+        quantum_contrast = coincidences_per_second/accidentals
+
+        self.sync_singles.setValue(singles_per_second_1)
+        self.other_singles.setValue(singles_per_second_2)
+        self.sync_efficiency.setValue(efficiency_1)
+        self.other_efficiency.setValue(efficiency_2)
+        self.coincidences_value.setValue(coincidences_per_second)
+        self.accidentals.setValue(accidentals)
+        self.quantum_contrast.setValue(quantum_contrast)
+
+        self.histogram.setData(np.linspace(0, self.coincidences_window.value(), len(hists[channel_2])), hists[channel_2])
+        self.coincidence_plot.add_new_value(coincidences_per_second)
+        self.singles_plot.add_new_values(
+            [singles_per_second_1, singles_per_second_2])
+
         if self.run_measurement_button.isChecked():
             # we want to take another measurement
-            self.run_measurement.emit(self.measurement_time.value())
+            self.run_measurement.emit(self.measurement_time.value(),
+                                      self.coincidences_window.value(),
+                                      self.histogram_bins.value(),
+                                      self.sync_channel.currentIndex())
         else:
             # reset the toggle, so that another measurement can be queued
             self.measurement_button_first_push = True
@@ -326,7 +404,10 @@ class DeviceMeasurement(QWidget):
         if checked:
             # the measurement button has been toggled on
             if self.measurement_button_first_push:
-                self.run_measurement.emit(self.measurement_time.value())
+                self.run_measurement.emit(self.measurement_time.value(),
+                                          self.coincidences_window.value(),
+                                          self.histogram_bins.value(),
+                                          self.sync_channel.currentIndex())
                 self.measurement_button_first_push = False
                 self.enable_device_settings_interaction.emit(False)
 
@@ -357,7 +438,8 @@ class CoincidenceWidget(QWidget):
         self.device_measurement.enable_device_settings_interaction.connect(
             self.device_setup.enable_device_interaction)
 
-        self.device_setup.device_initialised.connect(self.device_measurement.get_device)
+        self.device_setup.device_initialised.connect(
+            self.device_measurement.get_device)
 
         self.tab_widget.addTab(self.device_setup, "Device Setup")
         self.tab_widget.addTab(self.device_measurement, "Plot")
@@ -365,6 +447,7 @@ class CoincidenceWidget(QWidget):
         self.layout.addWidget(self.tab_widget)
 
         self.setLayout(self.layout)
+
 
 if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
