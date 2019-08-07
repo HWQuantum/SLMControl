@@ -29,7 +29,7 @@ class MeasurementThread(QObject):
 
     @pyqtSlot(int)
     def run_measurement(self, time):
-        values = hhlib_sys.measure_and_get_counts(self.dev, time, 50000, 100, 0)
+        values = hhlib_sys.measure_and_get_counts(self.dev, time, 50000, 500, 0)
         self.measurement_done.emit(*values)
 
 
