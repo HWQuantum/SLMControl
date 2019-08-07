@@ -3,6 +3,7 @@ from PyQt5.QtCore import QThread, QObject, pyqtSignal, pyqtSlot
 import pyqtgraph as pg
 from time import sleep
 import numpy as np
+import hhlib_sys
 
 
 class TestThread(QObject):
@@ -17,6 +18,19 @@ class TestThread(QObject):
         self.measurement_done.emit(*(np.random.randint(0, high=100, size=(9)),
                                      np.random.randint(0, high=100, size=(9)),
                                      [np.random.rand(9) for _ in range(9)]))
+
+
+class MeasurementThread(QObject):
+    measurement_done = pyqtSignal(list, list, list)
+
+    def __init__(self, device):
+        super().__init__()
+        self.dev = device
+
+    @pyqtSlot(int)
+    def run_measurement(self, time):
+        values = hhlib_sys.measure_and_get_counts(self.dev, time, 50000, 100, 0)
+        self.measurement_done.emit(*values)
 
 
 class ChannelSetting(QGroupBox):
@@ -135,7 +149,40 @@ class DeviceSetup(QWidget):
 
     @pyqtSlot()
     def init_device(self):
-        self.device_initialised.emit(2)
+        dev = None
+
+        for i in range(8):
+            try:
+                dev = hhlib_sys.open_device(i)
+                break
+            except Exception as e:
+                if e.__class__.__name__ != 'DeviceFailedToOpen':
+                    raise e
+
+        hhlib_sys.initialise(dev, 2, 0)
+        hhlib_sys.calibrate(dev)
+
+        values = self.channel_settings.get_values()
+
+        hhlib_sys.set_sync_CFD(dev, values["sync_channel"]["discriminator"],
+                               values["sync_channel"]["zero_cross"])
+        hhlib_sys.set_sync_channel_offset(dev,
+                                          values["sync_channel"]["offset"])
+
+        for i in range(hhlib_sys.get_number_of_input_channels(dev)):
+            hhlib_sys.set_input_CFD(
+                dev, i, values["input_channels"][i]["discriminator"],
+                values["input_channels"][i]["zero_cross"])
+            hhlib_sys.set_input_channel_offset(
+                dev, i, values["input_channels"][i]["offset"])
+
+        sleep(0.2)
+
+        if dev is not None:
+            self.device_initialised.emit(dev)
+        else:
+            print("Couldn't initialise device!")
+            self.device_initialised.emit(dev)
 
     @pyqtSlot(bool)
     def enable_device_interaction(self, enable):
@@ -250,27 +297,22 @@ class DeviceMeasurement(QWidget):
         self.run_measurement_button.clicked.connect(self.try_run_measurement)
         self.measurement_button_first_push = True
 
-        self.measurement_thread = QThread()
-        self.test = TestThread()
-        self.test.moveToThread(self.measurement_thread)
-        self.test.measurement_done.connect(self.update_data)
-        self.run_measurement.connect(self.test.run_measurement)
-        self.measurement_thread.start()
 
-        self.layout.addWidget(self.histogram_plot, 0, 0, 2, 1)
+        self.layout.addWidget(self.histogram_plot, 0, 0, 3, 1)
         self.layout.addWidget(self.run_measurement_button, 0, 1)
         self.layout.addWidget(self.measurement_time, 1, 1)
-        self.layout.addWidget(self.coincidence_plot, 2, 0, 2, 1)
-        self.layout.addWidget(self.singles_plot, 2, 1, 2, 1)
+        self.layout.addWidget(self.coincidence_plot, 3, 0, 2, 1)
+        self.layout.addWidget(self.singles_plot, 3, 1, 2, 1)
 
         self.setLayout(self.layout)
+        self.setEnabled(False)
 
-    @pyqtSlot(np.ndarray, np.ndarray, list)
+    @pyqtSlot(list, list, list)
     def update_data(self, singles, coincs, hists):
         '''Update the plots based on the counts data'''
-        self.histogram.setData(np.linspace(0, 1, 10), hists[0])
-        self.coincidence_plot.add_new_value(coincs[0])
-        self.singles_plot.add_new_values([singles[0], singles[1]])
+        self.histogram.setData(np.linspace(0, 1, len(hists[3])+1), hists[3])
+        self.coincidence_plot.add_new_value(coincs[3])
+        self.singles_plot.add_new_values([singles[0], singles[3]])
         if self.run_measurement_button.isChecked():
             # we want to take another measurement
             self.run_measurement.emit(self.measurement_time.value())
@@ -288,6 +330,19 @@ class DeviceMeasurement(QWidget):
                 self.measurement_button_first_push = False
                 self.enable_device_settings_interaction.emit(False)
 
+    @pyqtSlot(object)
+    def get_device(self, dev):
+        '''Assign the initialised device
+        '''
+        self.setEnabled(True)
+
+        self.measurement_thread = QThread()
+        self.test = MeasurementThread(dev)
+        self.test.moveToThread(self.measurement_thread)
+        self.test.measurement_done.connect(self.update_data)
+        self.run_measurement.connect(self.test.run_measurement)
+        self.measurement_thread.start()
+
 
 class CoincidenceWidget(QWidget):
     run_measurement = pyqtSignal()
@@ -302,20 +357,14 @@ class CoincidenceWidget(QWidget):
         self.device_measurement.enable_device_settings_interaction.connect(
             self.device_setup.enable_device_interaction)
 
-        self.tab_widget.addTab(self.device_measurement, "Plot")
+        self.device_setup.device_initialised.connect(self.device_measurement.get_device)
+
         self.tab_widget.addTab(self.device_setup, "Device Setup")
+        self.tab_widget.addTab(self.device_measurement, "Plot")
 
         self.layout.addWidget(self.tab_widget)
 
         self.setLayout(self.layout)
-
-
-class DeviceSettings(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.layout = QGridLayout()
-        self.setLayout(self.layout)
-
 
 if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
