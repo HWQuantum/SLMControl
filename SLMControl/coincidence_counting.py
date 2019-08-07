@@ -200,7 +200,7 @@ class CoincidencePlot(pg.PlotWidget):
         super().__init__()
         self.data = np.zeros((1))
         self.coincidence_plot = self.plot(self.data)
-        self.max_values
+        self.max_values = number_of_values
 
     @pyqtSlot(float)
     def add_new_value(self, x):
