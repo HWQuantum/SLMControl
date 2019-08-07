@@ -266,7 +266,7 @@ class DeviceMeasurement(QWidget):
     queueing up measurements in the measurement thread
     '''
     # run a measurement for a given number of ms
-    run_measurement = pyqtSignal(int)
+    run_measurement = pyqtSignal(int, int, int, int)
 
     enable_device_settings_interaction = pyqtSignal(bool)
 
