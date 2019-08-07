@@ -31,9 +31,12 @@ class SLMDisplay():
         slm_position = self.window.slm_position
         image = self.window.image
         window_title = self.window.windowTitle()
+        LUT = self.window.LUT
 
         self.create_screen(screen, slm_display_size, slm_position,
                            window_title)
+        if LUT is not None:
+            self.window.update_LUT(LUT)
         self.window.set_and_update_image(image)
 
     def create_screen(self, screen, slm_display_size, slm_position,
@@ -85,6 +88,7 @@ class FullScreenPlot(pg.PlotWidget):
         self.slm_display_size = slm_display_size
         self.slm_position = slm_position
         self.image = np.zeros(self.slm_display_size)
+        self.LUT = None
 
         self.set_limits()
         self.hideAxis('left')
@@ -120,6 +124,7 @@ class FullScreenPlot(pg.PlotWidget):
         '''Update the lookup table for the plot
         '''
         self.image_display.setLookupTable(LUT)
+        self.LUT = LUT
 
     def update_SLM_size(self, size):
         '''Update the display size of the slm
