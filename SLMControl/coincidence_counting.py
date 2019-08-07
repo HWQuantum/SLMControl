@@ -185,6 +185,7 @@ class DeviceSetup(QWidget):
         else:
             print("Couldn't initialise device!")
             self.device_initialised.emit(dev)
+        self.setEnabled(False)
 
     @pyqtSlot(bool)
     def enable_device_interaction(self, enable):
@@ -231,7 +232,7 @@ class SinglesPlot(pg.PlotWidget):
         super().__init__()
         self.max_values = number_of_values
         self.data = [np.zeros((1)), np.zeros((1))]
-        pens = [pg.mkPen('b'), pg.mkPen('r')]
+        pens = [pg.mkPen('w'), pg.mkPen('r')]
         self.plots = [
             self.plot(d, pen=pens[i]) for i, d in enumerate(self.data)
         ]
@@ -371,13 +372,23 @@ class DeviceMeasurement(QWidget):
 
         coincidences_per_second = coincs[channel_2] / time * 1000
 
-        efficiency_1 = coincidences_per_second / singles_per_second_1 * 100
-        efficiency_2 = coincidences_per_second / singles_per_second_2 * 100
+        if singles_per_second_1 != 0:
+            efficiency_1 = coincidences_per_second / singles_per_second_1 * 100
+        else:
+            efficiency_1 = float('inf')
+
+        if singles_per_second_2 != 0:
+            efficiency_2 = coincidences_per_second / singles_per_second_2 * 100
+        else:
+            efficiency_2 = float('inf')
 
         accidentals = singles_per_second_1 * singles_per_second_1 / (
             80000000)  # for 80 MHz rep rate
 
-        quantum_contrast = coincidences_per_second / accidentals
+        if accidentals != 0:
+            quantum_contrast = coincidences_per_second / accidentals
+        else:
+            quantum_contrast = float('inf')
 
         self.sync_singles.setValue(singles_per_second_1)
         self.other_singles.setValue(singles_per_second_2)
