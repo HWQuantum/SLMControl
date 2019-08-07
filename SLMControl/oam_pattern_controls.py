@@ -5,7 +5,7 @@ import pyqtgraph as pg
 
 class OAMControls(QWidget):
     '''Contains the controls for one OAM pattern
-    the amplitude, the m, the position and the phase
+    the amplitude, the m, and the phase
     '''
 
     value_changed = pyqtSignal()
@@ -16,12 +16,10 @@ class OAMControls(QWidget):
         self.amplitude = pg.SpinBox(value=1)
         self.ang_mom = pg.SpinBox(int=True, step=1)
         self.phase = pg.SpinBox()
-        self.position = XYController("Position")
 
         self.amplitude.sigValueChanged.connect(self.value_changed.emit)
         self.ang_mom.sigValueChanged.connect(self.value_changed.emit)
         self.phase.sigValueChanged.connect(self.value_changed.emit)
-        self.position.value_changed.connect(self.value_changed.emit)
 
         self.layout.addWidget(QLabel("Amplitude:"), 0, 0)
         self.layout.addWidget(self.amplitude, 0, 1, 1, 2)
@@ -29,7 +27,6 @@ class OAMControls(QWidget):
         self.layout.addWidget(self.ang_mom, 1, 1, 1, 2)
         self.layout.addWidget(QLabel("Phase:"), 2, 0)
         self.layout.addWidget(self.phase, 2, 1, 1, 2)
-        self.layout.addWidget(self.position, 0, 3, 3, 1)
         self.setLayout(self.layout)
 
     def get_values(self):
@@ -39,7 +36,6 @@ class OAMControls(QWidget):
             "amplitude": self.amplitude.value(),
             "ang_mom": self.ang_mom.value(),
             "phase": self.phase.value(),
-            "position": self.position.get_values(),
         }
 
     def set_values(self, *args, **kwargs):
@@ -53,8 +49,6 @@ class OAMControls(QWidget):
                     self.ang_mom.setValue(value)
                 elif key == "phase":
                     self.phase.setValue(value)
-                elif key == "position":
-                    self.position.set_values(value)
         for key, value in kwargs.items():
             if key == "amplitude":
                 self.amplitude.setValue(value)
@@ -62,8 +56,6 @@ class OAMControls(QWidget):
                 self.ang_mom.setValue(value)
             elif key == "phase":
                 self.phase.setValue(value)
-            elif key == "position":
-                self.position.set_values(value)
         self.value_changed.emit()
 
 
