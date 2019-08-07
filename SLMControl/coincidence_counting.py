@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QGridLayout
 from PyQt5.QtCore import QThread, QObject, pyqtSignal, pyqtSlot
 import pyqtgraph as pg
 from time import sleep
@@ -41,6 +41,13 @@ class CoincidenceWidget(QWidget):
     def update_plot(self, singles, coincs, hists):
             self.hist.setData(np.linspace(0, 1, 10), hists[0])
             self.run_measurement.emit()
+
+class DeviceSettings(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.layout = QGridLayout()
+        self.setLayout(self.layout)
+
 
 class TestWindow(QWidget):
     def __init__(self):

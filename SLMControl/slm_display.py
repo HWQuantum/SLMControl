@@ -238,6 +238,7 @@ class SLMController(QWidget):
         layout = QGridLayout()
         self.x, self.y = np.mgrid[-1:1:(slm_size[0] * 1j), -1:1:(slm_size[1] *
                                                                  1j)]
+        self.slm_size = slm_size
 
         screen_selector = QComboBox()
         oam_scroll_area = QScrollArea()
@@ -248,6 +249,8 @@ class SLMController(QWidget):
         self.plot = FullScreenPlot(slm_size, slm_size)
         self.zernike_controller = ZernikeSet(self.x, self.y, [(2, 2), (0, 2),
                                                               (-2, 2)])
+        self.position_controller = XYController("Position")
+
         self.lut_control = None
         self.lut_control_button = QPushButton("Open LUT controls")
         self.diffraction_grating = XYController("Diffraction grating")
@@ -272,6 +275,8 @@ class SLMController(QWidget):
         self.oam_controller.value_changed.connect(self.update_image)
         self.zernike_controller.value_changed.connect(self.update_image)
         self.diffraction_grating.value_changed.connect(self.update_image)
+        self.position_controller.value_changed.connect(self.update_image)
+        self.position_controller.value_changed.connect(self.change_zernike_position)
         add_controller_button.clicked.connect(
             self.oam_controller.add_new_oam_pattern)
         self.lut_control_button.clicked.connect(self.open_lut_control)
@@ -283,11 +288,18 @@ class SLMController(QWidget):
         layout.addWidget(oam_scroll_area, 1, 0, 1, 2)
         layout.addWidget(self.plot, 1, 2, 1, 2)
         layout.addWidget(self.lut_control_button, 3, 0, 1, 1)
-        layout.addWidget(zernike_scroll_area, 3, 1, 1, 3)
+        layout.addWidget(self.position_controller, 3, 1, 1, 3)
+        layout.addWidget(zernike_scroll_area, 4, 0, 1, 4)
 
         self.setLayout(layout)
 
         self.oam_controller.add_new_oam_pattern()
+
+    def change_zernike_position(self):
+        x, y = self.position_controller.get_values()
+        new_x, new_y = np.mgrid[(-1 - x):(1 - x):(self.slm_size[0] * 1j), (
+            -1 - y):(1 - y):(self.slm_size[1] * 1j)]
+        self.zernike_controller.change_position(new_x, new_y)
 
     def open_lut_control(self):
         '''Open the LUT control if it's not open already
@@ -315,10 +327,10 @@ class SLMController(QWidget):
         '''
         diff_x, diff_y = self.diffraction_grating.get_values()
         zernike_image = self.zernike_controller.get_pattern()
+        x, y = self.position_controller.get_values()
         oam_image = np.sum([
             p["amplitude"] *
-            np.exp(1j * ((p["ang_mom"] * np.arctan2(
-                self.y - p["position"][1], self.x - p["position"][0])) +
+            np.exp(1j * ((p["ang_mom"] * np.arctan2(self.y - y, self.x - x)) +
                          (diff_x * self.x + diff_y * self.y) + p["phase"]))
             for p in self.oam_controller.get_values()
         ],
@@ -350,7 +362,7 @@ class SLMController(QWidget):
             "zernike_controller": self.zernike_controller.get_values(),
             "diffraction_grating": self.diffraction_grating.get_values(),
             "lut_list": self.lut_list,
-            }
+        }
 
     def set_values(self, *args, **kwargs):
         '''Set the values of the SLM display from a set of args and kwargs
@@ -403,7 +415,6 @@ class MultiSLMController(QWidget):
 
         save_button.clicked.connect(self.save_file)
         load_button.clicked.connect(self.open_file)
-
 
     def closeEvent(self, event):
         for tab in self.slm_tabs:

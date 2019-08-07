@@ -136,6 +136,13 @@ class ZernikeSet(QGroupBox):
             control.value_changed.connect(self.value_changed.emit)
             self.layout.addWidget(control)
 
+    def change_position(self, X, Y):
+        '''Change the position of the zernike polynomials
+        '''
+        for indices, _ in self.value_dict.items():
+            self.value_dict[indices] = zernike_cartesian(*indices)(X, Y)
+        self.value_changed.emit()
+
     def get_values(self):
         '''Get the values contained and return a dictionary of
         {indices, value} with indices a string instead of a tuple
