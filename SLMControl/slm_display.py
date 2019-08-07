@@ -497,6 +497,6 @@ class MultiSLMController(QWidget):
 if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
     app = QApplication([])
-    w = MultiSLMController(app.screens(), [(512, 512), (512, 512)])
+    w = MultiSLMController(app.screens(), [(500, 500), (500, 500)])
     w.show()
     app.exec()
