@@ -198,7 +198,7 @@ class CoincidencePlot(pg.PlotWidget):
     '''
     def __init__(self, number_of_values):
         super().__init__()
-        self.data = []
+        self.data = np.zeros((1))
         self.coincidence_plot = self.plot(self.data)
 
     @pyqtSlot(float)
@@ -226,7 +226,7 @@ class SinglesPlot(pg.PlotWidget):
     def __init__(self, number_of_values):
         super().__init__()
         self.max_values = number_of_values
-        self.data = [[], []]
+        self.data = [np.zeros((1)), np.zeros((1))]
         pens = [pg.mkPen('b'), pg.mkPen('r')]
         self.plots = [
             self.plot(d, pen=pens[i]) for i, d in enumerate(self.data)
