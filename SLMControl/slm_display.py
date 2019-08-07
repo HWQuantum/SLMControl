@@ -231,6 +231,7 @@ class SLMController(QWidget):
         pattern is displayed on
         Pass slm_size to set the size of the slm to display on
         (how many pixels it has)
+        There are two zernike controls: one for position and one for the slm
         '''
         super().__init__()
         self.screens = screens
@@ -242,13 +243,19 @@ class SLMController(QWidget):
 
         screen_selector = QComboBox()
         oam_scroll_area = QScrollArea()
-        zernike_scroll_area = QScrollArea()
+        position_zernike_scroll_area = QScrollArea()
+        slm_zernike_scroll_area = QScrollArea()
         add_controller_button = QPushButton("Add OAM control")
 
         self.oam_controller = OAMControlSet()
         self.plot = FullScreenPlot(slm_size, slm_size)
-        self.zernike_controller = ZernikeSet(self.x, self.y, [(2, 2), (0, 2),
-                                                              (-2, 2)])
+        self.position_zernike_controller = ZernikeSet(
+            self.x, self.y, [(2, 2), (0, 2), (-2, 2)],
+            title="Position Zernike Controller")
+        self.slm_zernike_controller = ZernikeSet(self.x, self.y, [(2, 2),
+                                                                  (0, 2),
+                                                                  (-2, 2)],
+                                                 title="SLM Zernike Controller")
         self.position_controller = XYController("Position")
 
         self.lut_control = None
@@ -258,8 +265,11 @@ class SLMController(QWidget):
 
         oam_scroll_area.setWidget(self.oam_controller)
         oam_scroll_area.setWidgetResizable(True)
-        zernike_scroll_area.setWidget(self.zernike_controller)
-        zernike_scroll_area.setWidgetResizable(True)
+        position_zernike_scroll_area.setWidget(
+            self.position_zernike_controller)
+        position_zernike_scroll_area.setWidgetResizable(True)
+        slm_zernike_scroll_area.setWidget(self.slm_zernike_controller)
+        slm_zernike_scroll_area.setWidgetResizable(True)
 
         for i, screen in enumerate(screens):
             screen_selector.addItem("Screen {}".format(i))
@@ -273,10 +283,12 @@ class SLMController(QWidget):
                                                               currentIndex()]))
 
         self.oam_controller.value_changed.connect(self.update_image)
-        self.zernike_controller.value_changed.connect(self.update_image)
+        self.position_zernike_controller.value_changed.connect(self.update_image)
+        self.slm_zernike_controller.value_changed.connect(self.update_image)
         self.diffraction_grating.value_changed.connect(self.update_image)
         self.position_controller.value_changed.connect(self.update_image)
-        self.position_controller.value_changed.connect(self.change_zernike_position)
+        self.position_controller.value_changed.connect(
+            self.change_zernike_position)
         add_controller_button.clicked.connect(
             self.oam_controller.add_new_oam_pattern)
         self.lut_control_button.clicked.connect(self.open_lut_control)
@@ -289,7 +301,8 @@ class SLMController(QWidget):
         layout.addWidget(self.plot, 1, 2, 1, 2)
         layout.addWidget(self.lut_control_button, 3, 0, 1, 1)
         layout.addWidget(self.position_controller, 3, 1, 1, 3)
-        layout.addWidget(zernike_scroll_area, 4, 0, 1, 4)
+        layout.addWidget(position_zernike_scroll_area, 4, 0, 1, 2)
+        layout.addWidget(slm_zernike_scroll_area, 4, 2, 1, 2)
 
         self.setLayout(layout)
 
@@ -297,9 +310,7 @@ class SLMController(QWidget):
 
     def change_zernike_position(self):
         x, y = self.position_controller.get_values()
-        new_x, new_y = np.mgrid[(-1 - x):(1 - x):(self.slm_size[0] * 1j), (
-            -1 - y):(1 - y):(self.slm_size[1] * 1j)]
-        self.zernike_controller.change_position(new_x, new_y)
+        self.position_zernike_controller.change_position(self.x-x, self.y-y)
 
     def open_lut_control(self):
         '''Open the LUT control if it's not open already
@@ -326,7 +337,8 @@ class SLMController(QWidget):
         gui plot
         '''
         diff_x, diff_y = self.diffraction_grating.get_values()
-        zernike_image = self.zernike_controller.get_pattern()
+        position_zernike_image = self.position_zernike_controller.get_pattern()
+        slm_zernike_image = self.slm_zernike_controller.get_pattern()
         x, y = self.position_controller.get_values()
         oam_image = np.sum([
             p["amplitude"] *
@@ -335,7 +347,8 @@ class SLMController(QWidget):
             for p in self.oam_controller.get_values()
         ],
                            axis=0)
-        new_image = np.angle(zernike_image * oam_image)
+        new_image = np.angle(slm_zernike_image * position_zernike_image *
+                             oam_image)
         self.plot.set_and_update_image(new_image)
         self.slm_window.set_image(new_image)
 
@@ -344,10 +357,13 @@ class SLMController(QWidget):
         size is a tuple, eg: (500, 500)
         '''
         self.x, self.y = np.mgrid[-1:1:(size[0] * 1j), -1:1:(size[1] * 1j)]
+        delta_x, delta_y = self.position_controller.get_values()
         self.slm_window.window.update_SLM_size(size)
         self.plot.screen_size = size
         self.plot.update_SLM_size(size)
-        self.zernike_controller.generate_polynomials(self.x, self.y)
+        self.position_zernike_controller.generate_polynomials(
+            self.x - delta_x, self.y - delta_y)
+        self.slm_zernike_controller.generate_polynomials(self.x, self.y)
 
     def close_slm_window(self):
         self.slm_window.window.close()
@@ -358,17 +374,27 @@ class SLMController(QWidget):
         '''Get a dictionary of values for the contained widgets
         '''
         return {
-            "oam_controller": self.oam_controller.get_values(),
-            "zernike_controller": self.zernike_controller.get_values(),
-            "diffraction_grating": self.diffraction_grating.get_values(),
-            "lut_list": self.lut_list,
+            "oam_controller":
+            self.oam_controller.get_values(),
+            "position_zernike_controller":
+            self.position_zernike_controller.get_values(),
+            "slm_zernike_controller":
+            self.slm_zernike_controller.get_values(),
+            "diffraction_grating":
+            self.diffraction_grating.get_values(),
+            "position_controller":
+            self.position_controller.get_values(),
+            "lut_list":
+            self.lut_list,
         }
 
     def set_values(self, *args, **kwargs):
         '''Set the values of the SLM display from a set of args and kwargs
         Expects values for:
         oam_controller,
-        zernike_controller,
+        position_zernike_controller,
+        slm_zernike_controller,
+        position_controller,
         diffraction_grating,
         lut_list,
         '''
@@ -471,6 +497,6 @@ class MultiSLMController(QWidget):
 if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
     app = QApplication([])
-    w = MultiSLMController(app.screens(), [(500, 500), (500, 500)])
+    w = MultiSLMController(app.screens(), [(512, 512), (512, 512)])
     w.show()
     app.exec()

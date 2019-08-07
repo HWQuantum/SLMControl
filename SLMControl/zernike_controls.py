@@ -103,7 +103,7 @@ class ZernikeSet(QGroupBox):
 
     value_changed = pyqtSignal()
 
-    def __init__(self, X, Y, poly_set=None, poly_limit=6):
+    def __init__(self, X, Y, poly_set=None, poly_limit=6, title="Zernike Controls"):
         '''If poly_set is not None, display only the given polynomials.
         poly_set should be of type: [(m, n)] - a list of m, n values
         Otherwise just generate up to poly_limit controls
@@ -112,7 +112,7 @@ class ZernikeSet(QGroupBox):
         made from numpy's mgrid function
         '''
         super().__init__()
-        self.setTitle("Zernike Controls")
+        self.setTitle(title)
         self.layout = QHBoxLayout()
         self.value_dict = {}
         self.controls = {}
