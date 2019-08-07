@@ -373,7 +373,7 @@ class DeviceMeasurement(QWidget):
         accidentals = singles_per_second_1 * singles_per_second_1 / (
             80000000)  # for 80 MHz rep rate
 
-        quantum_contrast = coincidences_per_second/accidentals
+        quantum_contrast = coincidences_per_second / accidentals
 
         self.sync_singles.setValue(singles_per_second_1)
         self.other_singles.setValue(singles_per_second_2)
@@ -383,7 +383,9 @@ class DeviceMeasurement(QWidget):
         self.accidentals.setValue(accidentals)
         self.quantum_contrast.setValue(quantum_contrast)
 
-        self.histogram.setData(np.linspace(0, self.coincidences_window.value(), len(hists[channel_2])), hists[channel_2])
+        self.histogram.setData(
+            np.linspace(0, self.coincidences_window.value(),
+                        len(hists[channel_2]) + 1), hists[channel_2])
         self.coincidence_plot.add_new_value(coincidences_per_second)
         self.singles_plot.add_new_values(
             [singles_per_second_1, singles_per_second_2])
