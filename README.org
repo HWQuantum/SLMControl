@@ -22,4 +22,7 @@ Just run SLMControl/slm_display.py, and it'll appear.
    - [X] Work on the opening windows on different desktops (it doesn't work correctly)
    - [X] Make the slm windows close when the main widget closes
    - [X] Have the ability to reshow the slm windows when closed/hidden
-   - [ ] Have the ability to put zernike functions onto the beam? (add an amplitude or something)
+   - [X] Have the ability to put zernike functions onto the beam? (add an amplitude or something)
+   - [ ] In coincidence_counting, make the measure_and_get_values function not block the GUI
+     this is caused by the rust function not release the GIL
+     maybe pyobject3 has some way to release the GIL in this function?
