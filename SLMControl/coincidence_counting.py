@@ -280,8 +280,14 @@ class MeasurementCountDisplay(QWidget):
         self.accidentals = pg.ValueLabel()
         self.quantum_contrast = pg.ValueLabel()
 
-        f = QFont("Arial", 50)
+        f = QFont("Arial", 20)
         self.coincidences_value.setFont(f)
+        self.sync_singles.setFont(f)
+        self.other_singles.setFont(f)
+        self.sync_efficiency.setFont(f)
+        self.other_efficiency.setFont(f)
+        self.accidentals.setFont(f)
+        self.quantum_contrast.setFont(f)
 
         self.layout.addWidget(QLabel("Sync singles (1/s)"), 0, 0)
         self.layout.addWidget(self.sync_singles, 0, 1)
@@ -391,8 +397,8 @@ class DeviceMeasurement(QWidget):
         self.layout.addWidget(self.measurement_labels, 6, 0, 2, 2)
 
         self.layout.addWidget(self.histogram_plot, 0, 3, 6, 2)
-        self.layout.addWidget(self.coincidence_plot, 6, 3, 1, 2)
-        self.layout.addWidget(self.singles_plot, 7, 3, 1, 2)
+        self.layout.addWidget(self.singles_plot, 6, 3, 1, 2)
+        self.layout.addWidget(self.coincidence_plot, 7, 3, 1, 2)
 
         self.setLayout(self.layout)
 
