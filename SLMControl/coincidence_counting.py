@@ -21,7 +21,7 @@ class TestThread(QObject):
 
 
 class MeasurementThread(QObject):
-    measurement_done = pyqtSignal(int, list, list, list)
+    measurement_done = pyqtSignal(int, int, list, list, list)
     measurement_error = pyqtSignal()
 
     def __init__(self, device):
@@ -34,7 +34,7 @@ class MeasurementThread(QObject):
             values = hhlib_sys.measure_and_get_counts(self.dev, time,
                                                       coincidence_window, bins,
                                                       sync_channel)
-            self.measurement_done.emit(time, *values)
+            self.measurement_done.emit(time, coincidence_window, *values)
         except Exception as e:
             print("Couldn't read values!")
             self.measurement_error.emit()
@@ -387,8 +387,8 @@ class DeviceMeasurement(QWidget):
 
         self.setLayout(self.layout)
 
-    @pyqtSlot(int, list, list, list)
-    def update_data(self, time, singles, coincs, hists):
+    @pyqtSlot(int, int, list, list, list)
+    def update_data(self, time, coincidence_window, singles, coincs, hists):
         '''Update the plots based on the counts data'''
         channel_1 = self.sync_channel.currentIndex()
         channel_2 = self.other_channel.currentIndex()
@@ -408,8 +408,8 @@ class DeviceMeasurement(QWidget):
         else:
             efficiency_2 = float('inf')
 
-        accidentals = singles_per_second_1 * singles_per_second_1 / (
-            80000000)  # for 80 MHz rep rate
+        accidentals = singles_per_second_1 * singles_per_second_1 * (
+            coincidence_window / 1_000_000_000_000)
 
         if accidentals != 0:
             quantum_contrast = coincidences_per_second / accidentals
