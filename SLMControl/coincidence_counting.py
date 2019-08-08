@@ -273,12 +273,15 @@ class MeasurementCountDisplay(QWidget):
         self.layout = QGridLayout()
 
         format_string = '{avgValue:0.7g}'
+        efficiency_format_string = '{avgValue:0.5g}'
 
         self.coincidences_value = pg.ValueLabel(formatStr=format_string)
         self.sync_singles = pg.ValueLabel(formatStr=format_string)
         self.other_singles = pg.ValueLabel(formatStr=format_string)
-        self.sync_efficiency = pg.ValueLabel(formatStr=format_string)
-        self.other_efficiency = pg.ValueLabel(formatStr=format_string)
+        self.sync_efficiency = pg.ValueLabel(
+            formatStr=efficiency_format_string)
+        self.other_efficiency = pg.ValueLabel(
+            formatStr=efficiency_format_string)
         self.accidentals = pg.ValueLabel(formatStr=format_string)
         self.quantum_contrast = pg.ValueLabel(formatStr=format_string)
 
