@@ -475,12 +475,13 @@ class CoincidenceWidget(QWidget):
         self.device_measurement = DeviceMeasurement()
         self.device_setup = DeviceSetup()
 
+        ######### SET DEFAULTS ########
         self.device_setup.set_values(
             channel_settings={
                 "sync_channel": {
                     "discriminator": 100,
                     "zero_cross": 10,
-                    "offset": 350
+                    "offset": 11000
                 },
                 "input_channels": [
                     {
@@ -496,10 +497,11 @@ class CoincidenceWidget(QWidget):
                     {
                         "discriminator": 100,
                         "zero_cross": 10,
-                        "offset": -900
+                        "offset": 0
                     },
                 ],
             })
+        ######### SET DEFAULTS ########
 
         self.tab_widget.addTab(self.device_setup, "Device Setup")
         self.tab_widget.addTab(self.device_measurement, "Plot")
