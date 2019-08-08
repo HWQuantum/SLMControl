@@ -83,14 +83,14 @@ class ChannelSettingContainer(QWidget):
     '''
     def __init__(self):
         super().__init__()
-        self.layout = QVBoxLayout()
+        self.layout = QGridLayout()
         self.sync_channel = ChannelSetting("Sync Channel")
-        self.layout.addWidget(self.sync_channel)
+        self.layout.addWidget(self.sync_channel, 0, 0)
         self.input_channels = []
-        for i in range(8):
-
+        for i, pos in enumerate([(0, 1), (1, 0), (1, 1), (2, 0), (2, 1),
+                                 (3, 0), (3, 1), (4, 0)]):
             c = ChannelSetting("Input Channel {}".format(i))
-            self.layout.addWidget(c)
+            self.layout.addWidget(c, pos[0], pos[1])
             self.input_channels.append(c)
 
         self.setLayout(self.layout)
@@ -128,7 +128,7 @@ class ChannelSettingContainer(QWidget):
 class DeviceSetup(QWidget):
     '''Widget which controls the initialisation of a counting device
     '''
-    device_initialised = pyqtSignal(object)
+    try_initialisation = pyqtSignal(dict)
 
     def __init__(self):
         super().__init__()
@@ -143,7 +143,6 @@ class DeviceSetup(QWidget):
         channel_scroll_area.setWidgetResizable(False)
 
         self.initialise.clicked.connect(self.init_device)
-        self.device_initialised.connect(lambda: self.setEnabled(True))
 
         self.layout.addWidget(channel_scroll_area, 0, 0)
         self.layout.addWidget(self.initialise, 1, 0)
@@ -151,41 +150,45 @@ class DeviceSetup(QWidget):
 
     @pyqtSlot()
     def init_device(self):
-        dev = None
+        '''Send the signal to initialise the device
+        '''
+        self.try_initialisation.emit(
+            {"channel_settings": self.channel_settings.get_values()})
+        # dev = None
 
-        for i in range(8):
-            try:
-                dev = hhlib_sys.open_device(i)
-                break
-            except Exception as e:
-                if e.__class__.__name__ != 'DeviceFailedToOpen':
-                    raise e
+        # for i in range(8):
+        #     try:
+        #         dev = hhlib_sys.open_device(i)
+        #         break
+        #     except Exception as e:
+        #         if e.__class__.__name__ != 'DeviceFailedToOpen':
+        #             raise e
 
-        hhlib_sys.initialise(dev, 2, 0)
-        hhlib_sys.calibrate(dev)
+        # hhlib_sys.initialise(dev, 2, 0)
+        # hhlib_sys.calibrate(dev)
 
-        values = self.channel_settings.get_values()
+        # values = self.channel_settings.get_values()
 
-        hhlib_sys.set_sync_CFD(dev, values["sync_channel"]["discriminator"],
-                               values["sync_channel"]["zero_cross"])
-        hhlib_sys.set_sync_channel_offset(dev,
-                                          values["sync_channel"]["offset"])
+        # hhlib_sys.set_sync_CFD(dev, values["sync_channel"]["discriminator"],
+        #                        values["sync_channel"]["zero_cross"])
+        # hhlib_sys.set_sync_channel_offset(dev,
+        #                                   values["sync_channel"]["offset"])
 
-        for i in range(hhlib_sys.get_number_of_input_channels(dev)):
-            hhlib_sys.set_input_CFD(
-                dev, i, values["input_channels"][i]["discriminator"],
-                values["input_channels"][i]["zero_cross"])
-            hhlib_sys.set_input_channel_offset(
-                dev, i, values["input_channels"][i]["offset"])
+        # for i in range(hhlib_sys.get_number_of_input_channels(dev)):
+        #     hhlib_sys.set_input_CFD(
+        #         dev, i, values["input_channels"][i]["discriminator"],
+        #         values["input_channels"][i]["zero_cross"])
+        #     hhlib_sys.set_input_channel_offset(
+        #         dev, i, values["input_channels"][i]["offset"])
 
-        sleep(0.2)
+        # sleep(0.2)
 
-        if dev is not None:
-            self.device_initialised.emit(dev)
-        else:
-            print("Couldn't initialise device!")
-            self.device_initialised.emit(dev)
-        self.setEnabled(False)
+        # if dev is not None:
+        #     self.device_initialised.emit(dev)
+        # else:
+        #     print("Couldn't initialise device!")
+        #     self.device_initialised.emit(dev)
+        # self.setEnabled(False)
 
     @pyqtSlot(bool)
     def enable_device_interaction(self, enable):
@@ -261,6 +264,55 @@ class SinglesPlot(pg.PlotWidget):
         self.update_plot()
 
 
+class MeasurementCountDisplay(QWidget):
+    '''Display the counts from the measurements
+    '''
+    def __init__(self):
+        super().__init__()
+
+        self.layout = QGridLayout()
+
+        self.coincidences_value = pg.ValueLabel()
+        self.sync_singles = pg.ValueLabel()
+        self.other_singles = pg.ValueLabel()
+        self.sync_efficiency = pg.ValueLabel()
+        self.other_efficiency = pg.ValueLabel()
+        self.accidentals = pg.ValueLabel()
+        self.quantum_contrast = pg.ValueLabel()
+
+        self.layout.addWidget(QLabel("Sync singles (1/s)"), 0, 0)
+        self.layout.addWidget(self.sync_singles, 0, 1)
+        self.layout.addWidget(QLabel("Other singles (1/s)"), 1, 0)
+        self.layout.addWidget(self.other_singles, 1, 1)
+        self.layout.addWidget(QLabel("Sync efficiency (%)"), 2, 0)
+        self.layout.addWidget(self.sync_efficiency, 2, 1)
+        self.layout.addWidget(QLabel("Other efficiency (%)"), 3, 0)
+        self.layout.addWidget(self.other_efficiency, 3, 1)
+        self.layout.addWidget(QLabel("Coincidences (1/s)"), 4, 0)
+        self.layout.addWidget(self.coincidences_value, 4, 1)
+        self.layout.addWidget(QLabel("Accidentals (1/s)"), 5, 0)
+        self.layout.addWidget(self.accidentals, 5, 1)
+        self.layout.addWidget(QLabel("Quantum contrast"), 6, 0)
+        self.layout.addWidget(self.quantum_contrast, 6, 1)
+
+        self.setLayout(self.layout)
+
+    @pyqtSlot(list)
+    def update_values(self, values):
+        '''Update the labels with a set of values
+        values is a list with values in this order:
+        [singles_sync, singles_other, efficiency_sync, efficiency_other,
+        coincidences, accidentals, quantum_contrast]
+        '''
+        self.sync_singles.setValue(values[0])
+        self.other_singles.setValue(values[1])
+        self.sync_efficiency.setValue(values[2])
+        self.other_efficiency.setValue(values[3])
+        self.coincidences_value.setValue(values[4])
+        self.accidentals.setValue(values[5])
+        self.quantum_contrast.setValue(values[6])
+
+
 class DeviceMeasurement(QWidget):
     '''Widget which displays and orders measurements from
     a counting device
@@ -272,8 +324,7 @@ class DeviceMeasurement(QWidget):
     '''
     # run a measurement for a given number of ms
     run_measurement = pyqtSignal(int, int, int, int)
-
-    enable_device_settings_interaction = pyqtSignal(bool)
+    measurement_run_status = pyqtSignal(bool)
 
     def __init__(self):
         super().__init__()
@@ -290,21 +341,14 @@ class DeviceMeasurement(QWidget):
                                            step=1)
 
         self.histogram_plot = pg.PlotWidget()
-        self.histogram = self.histogram_plot.plot([0, 1], [1],
+        self.histogram = self.histogram_plot.plot([0, 1], [0],
                                                   stepMode=True,
                                                   fillLevel=0,
                                                   brush=(0, 0, 255, 150))
 
         self.coincidence_plot = CoincidencePlot(100)
         self.singles_plot = SinglesPlot(100)
-
-        self.coincidences_value = pg.ValueLabel()
-        self.sync_singles = pg.ValueLabel()
-        self.other_singles = pg.ValueLabel()
-        self.sync_efficiency = pg.ValueLabel()
-        self.other_efficiency = pg.ValueLabel()
-        self.accidentals = pg.ValueLabel()
-        self.quantum_contrast = pg.ValueLabel()
+        self.measurement_labels = MeasurementCountDisplay()
 
         self.coincidences_window = pg.SpinBox(value=50000,
                                               int=True,
@@ -339,27 +383,13 @@ class DeviceMeasurement(QWidget):
         self.layout.addWidget(QLabel("Measurement time (ms):"), 4, 0)
         self.layout.addWidget(self.measurement_time, 4, 1)
         self.layout.addWidget(self.run_measurement_button, 5, 0, 1, 2)
-        self.layout.addWidget(QLabel("Sync singles (1/s)"), 6, 0)
-        self.layout.addWidget(self.sync_singles, 6, 1)
-        self.layout.addWidget(QLabel("Other singles (1/s)"), 7, 0)
-        self.layout.addWidget(self.other_singles, 7, 1)
-        self.layout.addWidget(QLabel("Sync efficiency (%)"), 8, 0)
-        self.layout.addWidget(self.sync_efficiency, 8, 1)
-        self.layout.addWidget(QLabel("Other efficiency (%)"), 9, 0)
-        self.layout.addWidget(self.other_efficiency, 9, 1)
-        self.layout.addWidget(QLabel("Coincidences (1/s)"), 10, 0)
-        self.layout.addWidget(self.coincidences_value, 10, 1)
-        self.layout.addWidget(QLabel("Accidentals (1/s)"), 11, 0)
-        self.layout.addWidget(self.accidentals, 11, 1)
-        self.layout.addWidget(QLabel("Quantum contrast"), 12, 0)
-        self.layout.addWidget(self.quantum_contrast, 12, 1)
+        self.layout.addWidget(self.measurement_labels, 6, 0, 2, 2)
 
         self.layout.addWidget(self.histogram_plot, 0, 3, 6, 2)
-        self.layout.addWidget(self.coincidence_plot, 6, 3, 4, 2)
-        self.layout.addWidget(self.singles_plot, 10, 3, 3, 2)
+        self.layout.addWidget(self.coincidence_plot, 6, 3, 1, 2)
+        self.layout.addWidget(self.singles_plot, 7, 3, 1, 2)
 
         self.setLayout(self.layout)
-        self.setEnabled(False)
 
     @pyqtSlot(int, list, list, list)
     def update_data(self, time, singles, coincs, hists):
@@ -390,13 +420,11 @@ class DeviceMeasurement(QWidget):
         else:
             quantum_contrast = float('inf')
 
-        self.sync_singles.setValue(singles_per_second_1)
-        self.other_singles.setValue(singles_per_second_2)
-        self.sync_efficiency.setValue(efficiency_1)
-        self.other_efficiency.setValue(efficiency_2)
-        self.coincidences_value.setValue(coincidences_per_second)
-        self.accidentals.setValue(accidentals)
-        self.quantum_contrast.setValue(quantum_contrast)
+        self.measurement_labels.update_values([
+            singles_per_second_1, singles_per_second_2, efficiency_1,
+            efficiency_2, coincidences_per_second, accidentals,
+            quantum_contrast
+        ])
 
         self.histogram.setData(
             np.linspace(0, self.coincidences_window.value(),
@@ -414,7 +442,7 @@ class DeviceMeasurement(QWidget):
         else:
             # reset the toggle, so that another measurement can be queued
             self.measurement_button_first_push = True
-            self.enable_device_settings_interaction.emit(True)
+            self.measurement_run_status.emit(True)
 
     @pyqtSlot(bool)
     def try_run_measurement(self, checked):
@@ -426,7 +454,7 @@ class DeviceMeasurement(QWidget):
                                           self.histogram_bins.value(),
                                           self.sync_channel.currentIndex())
                 self.measurement_button_first_push = False
-                self.enable_device_settings_interaction.emit(False)
+                self.measurement_run_status.emit(False)
 
     @pyqtSlot(object)
     def get_device(self, dev):
@@ -451,12 +479,6 @@ class CoincidenceWidget(QWidget):
         self.tab_widget = QTabWidget()
         self.device_measurement = DeviceMeasurement()
         self.device_setup = DeviceSetup()
-
-        self.device_measurement.enable_device_settings_interaction.connect(
-            self.device_setup.enable_device_interaction)
-
-        self.device_setup.device_initialised.connect(
-            self.device_measurement.get_device)
 
         self.tab_widget.addTab(self.device_setup, "Device Setup")
         self.tab_widget.addTab(self.device_measurement, "Plot")
