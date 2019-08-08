@@ -22,6 +22,7 @@ class TestThread(QObject):
 
 class MeasurementThread(QObject):
     measurement_done = pyqtSignal(int, list, list, list)
+    measurement_error = pyqtSignal()
 
     def __init__(self, device):
         super().__init__()
@@ -29,10 +30,18 @@ class MeasurementThread(QObject):
 
     @pyqtSlot(int, int, int, int)
     def run_measurement(self, time, coincidence_window, bins, sync_channel):
-        values = hhlib_sys.measure_and_get_counts(self.dev, time,
-                                                  coincidence_window, bins,
-                                                  sync_channel)
-        self.measurement_done.emit(time, *values)
+        try:
+            values = hhlib_sys.measure_and_get_counts(self.dev, time,
+                                                      coincidence_window, bins,
+                                                      sync_channel)
+            self.measurement_done.emit(time, *values)
+        except Exception as e:
+            print("Couldn't read values!")
+            self.measurement_error.emit()
+
+    @pyqtSlot()
+    def close_device(self):
+        hhlib_sys.close_device(self.dev)
 
 
 class ChannelSetting(QGroupBox):
@@ -111,7 +120,7 @@ class ChannelSettingContainer(QWidget):
                         self.input_channels[i].set_values(v)
                 else:
                     try:
-                        getattr(self, key).setValue(value)
+                        getattr(self, key).set_values(value)
                     except AttributeError:
                         pass
         for key, value in kwargs.items():
@@ -120,7 +129,7 @@ class ChannelSettingContainer(QWidget):
                     self.input_channels[i].set_values(v)
             else:
                 try:
-                    getattr(self, key).setValue(value)
+                    getattr(self, key).set_values(value)
                 except AttributeError:
                     pass
 
@@ -158,6 +167,28 @@ class DeviceSetup(QWidget):
     @pyqtSlot(bool)
     def enable_device_interaction(self, enable):
         self.initialise.setEnabled(enable)
+
+    def get_values(self):
+        '''get the values
+        '''
+        return {
+            "channel_settings": self.channel_settings.get_values(),
+        }
+
+    def set_values(self, *args, **kwargs):
+        '''Set the values
+        '''
+        for dictionary in args:
+            for key, value in dictionary.items():
+                try:
+                    getattr(self, key).set_values(value)
+                except AttributeError:
+                    pass
+        for key, value in kwargs.items():
+            try:
+                getattr(self, key).set_values(value)
+            except AttributeError:
+                pass
 
 
 class CoincidencePlot(pg.PlotWidget):
@@ -421,16 +452,54 @@ class DeviceMeasurement(QWidget):
                 self.measurement_button_first_push = False
                 self.measurement_run_status.emit(False)
 
+    @pyqtSlot()
+    def reset_measurement_button(self):
+        '''reset the state of the measurement button
+        for use when a measurement fails
+        '''
+        self.measurement_button_first_push = True
+        self.run_measurement_button.setChecked(False)
+
 
 class CoincidenceWidget(QWidget):
     run_measurement = pyqtSignal()
+    close_device = pyqtSignal()
 
     def __init__(self):
         super().__init__()
+
+        self.measurement_thread_container = None
+
         self.layout = QVBoxLayout()
         self.tab_widget = QTabWidget()
         self.device_measurement = DeviceMeasurement()
         self.device_setup = DeviceSetup()
+
+        self.device_setup.set_values(
+            channel_settings={
+                "sync_channel": {
+                    "discriminator": 100,
+                    "zero_cross": 10,
+                    "offset": 350
+                },
+                "input_channels": [
+                    {
+                        "discriminator": 100,
+                        "zero_cross": 10,
+                        "offset": 10700
+                    },
+                    {
+                        "discriminator": 100,
+                        "zero_cross": 10,
+                        "offset": -6100
+                    },
+                    {
+                        "discriminator": 100,
+                        "zero_cross": 10,
+                        "offset": -900
+                    },
+                ],
+            })
 
         self.tab_widget.addTab(self.device_setup, "Device Setup")
         self.tab_widget.addTab(self.device_measurement, "Plot")
@@ -446,6 +515,12 @@ class CoincidenceWidget(QWidget):
     def initialise_and_thread_device(self, values):
         '''Initialise a hydraharp and send it to a thread
         '''
+        if self.measurement_thread_container is not None:
+            self.close_device.emit()
+            sleep(1)
+            self.measurement_thread_container.quit()
+            self.measurement_thread_container.wait()
+            self.measurement_thread_container = None
         self.dev = initialise_device(values)
 
         self.measurement_thread_container = QThread()
@@ -453,9 +528,19 @@ class CoincidenceWidget(QWidget):
         self.measurement_thread.moveToThread(self.measurement_thread_container)
         self.measurement_thread.measurement_done.connect(
             self.device_measurement.update_data)
+        self.measurement_thread.measurement_error.connect(
+            self.reset_after_failed_measurement)
+        self.close_device.connect(self.measurement_thread.close_device)
         self.device_measurement.run_measurement.connect(
             self.measurement_thread.run_measurement)
-        self.measurement_thread.start()
+
+        self.measurement_thread_container.start()
+
+    @pyqtSlot()
+    def reset_after_failed_measurement(self):
+        '''If a measurement failed, we want to reset the measurement button
+        '''
+        self.device_measurement.reset_measurement_button()
 
 
 def initialise_device(values):
