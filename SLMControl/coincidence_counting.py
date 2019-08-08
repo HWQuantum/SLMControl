@@ -342,8 +342,8 @@ class DeviceMeasurement(QWidget):
                                                   fillLevel=0,
                                                   brush=(0, 0, 255, 150))
 
-        self.coincidence_plot = CoincidencePlot(100)
-        self.singles_plot = SinglesPlot(100)
+        self.coincidence_plot = CoincidencePlot(1000)
+        self.singles_plot = SinglesPlot(1000)
         self.measurement_labels = MeasurementCountDisplay()
 
         self.coincidences_window = pg.SpinBox(value=50000,
