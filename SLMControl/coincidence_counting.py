@@ -154,41 +154,6 @@ class DeviceSetup(QWidget):
         '''
         self.try_initialisation.emit(
             {"channel_settings": self.channel_settings.get_values()})
-        # dev = None
-
-        # for i in range(8):
-        #     try:
-        #         dev = hhlib_sys.open_device(i)
-        #         break
-        #     except Exception as e:
-        #         if e.__class__.__name__ != 'DeviceFailedToOpen':
-        #             raise e
-
-        # hhlib_sys.initialise(dev, 2, 0)
-        # hhlib_sys.calibrate(dev)
-
-        # values = self.channel_settings.get_values()
-
-        # hhlib_sys.set_sync_CFD(dev, values["sync_channel"]["discriminator"],
-        #                        values["sync_channel"]["zero_cross"])
-        # hhlib_sys.set_sync_channel_offset(dev,
-        #                                   values["sync_channel"]["offset"])
-
-        # for i in range(hhlib_sys.get_number_of_input_channels(dev)):
-        #     hhlib_sys.set_input_CFD(
-        #         dev, i, values["input_channels"][i]["discriminator"],
-        #         values["input_channels"][i]["zero_cross"])
-        #     hhlib_sys.set_input_channel_offset(
-        #         dev, i, values["input_channels"][i]["offset"])
-
-        # sleep(0.2)
-
-        # if dev is not None:
-        #     self.device_initialised.emit(dev)
-        # else:
-        #     print("Couldn't initialise device!")
-        #     self.device_initialised.emit(dev)
-        # self.setEnabled(False)
 
     @pyqtSlot(bool)
     def enable_device_interaction(self, enable):
@@ -456,19 +421,6 @@ class DeviceMeasurement(QWidget):
                 self.measurement_button_first_push = False
                 self.measurement_run_status.emit(False)
 
-    @pyqtSlot(object)
-    def get_device(self, dev):
-        '''Assign the initialised device
-        '''
-        self.setEnabled(True)
-
-        self.measurement_thread = QThread()
-        self.test = MeasurementThread(dev)
-        self.test.moveToThread(self.measurement_thread)
-        self.test.measurement_done.connect(self.update_data)
-        self.run_measurement.connect(self.test.run_measurement)
-        self.measurement_thread.start()
-
 
 class CoincidenceWidget(QWidget):
     run_measurement = pyqtSignal()
@@ -483,9 +435,63 @@ class CoincidenceWidget(QWidget):
         self.tab_widget.addTab(self.device_setup, "Device Setup")
         self.tab_widget.addTab(self.device_measurement, "Plot")
 
+        self.device_setup.try_initialisation.connect(
+            self.initialise_and_thread_device)
+
         self.layout.addWidget(self.tab_widget)
 
         self.setLayout(self.layout)
+
+    @pyqtSlot(dict)
+    def initialise_and_thread_device(self, values):
+        '''Initialise a hydraharp and send it to a thread
+        '''
+        self.dev = initialise_device(values)
+
+        self.measurement_thread_container = QThread()
+        self.measurement_thread = MeasurementThread(self.dev)
+        self.measurement_thread.moveToThread(self.measurement_thread_container)
+        self.measurement_thread.measurement_done.connect(
+            self.device_measurement.update_data)
+        self.device_measurement.run_measurement.connect(
+            self.measurement_thread.run_measurement)
+        self.measurement_thread.start()
+
+
+def initialise_device(values):
+    '''Initialise the first hydraharp device that is found
+    with the values given in values
+    '''
+    dev = None
+
+    for i in range(8):
+        try:
+            dev = hhlib_sys.open_device(i)
+            break
+        except Exception as e:
+            if e.__class__.__name__ != 'DeviceFailedToOpen':
+                raise e
+
+    hhlib_sys.initialise(dev, 2, 0)
+    hhlib_sys.calibrate(dev)
+
+    hhlib_sys.set_sync_CFD(
+        dev, values["channel_settings"]["sync_channel"]["discriminator"],
+        values["channel_settings"]["sync_channel"]["zero_cross"])
+    hhlib_sys.set_sync_channel_offset(
+        dev, values["channel_settings"]["sync_channel"]["offset"])
+
+    for i in range(hhlib_sys.get_number_of_input_channels(dev)):
+        hhlib_sys.set_input_CFD(
+            dev, i,
+            values["channel_settings"]["input_channels"][i]["discriminator"],
+            values["channel_settings"]["input_channels"][i]["zero_cross"])
+        hhlib_sys.set_input_channel_offset(
+            dev, i, values["channel_settings"]["input_channels"][i]["offset"])
+
+    sleep(0.2)
+
+    return dev
 
 
 if __name__ == '__main__':
