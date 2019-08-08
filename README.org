@@ -8,6 +8,18 @@ choosing which desktop they display on, etc...
 If want to control two SLMs there's a program already written for that.
 Just run SLMControl/slm_display.py, and it'll appear.
 
+** Use
+   There's two main files here:
+   - coincidence_counting.py
+   - slm_display.py
+     
+   You use slm_display.py for displaying OAM patterns on two slms at the same time
+   You use coincidence_counting.py for... coincidence counting :^)
+   For coincidence counting to run, you need the hhlib_sys library for controlling 
+   your Hydra Harp 400, which can be found [[https://github.com/HWQuantum/coincidence-counter][here]].
+   Follow the instructions to compile that, then place the resulting library into the SLMControl
+   folder in this repo.
+
 ** Requirements
 *** Python requirements
     - PyQt5
@@ -23,6 +35,6 @@ Just run SLMControl/slm_display.py, and it'll appear.
    - [X] Make the slm windows close when the main widget closes
    - [X] Have the ability to reshow the slm windows when closed/hidden
    - [X] Have the ability to put zernike functions onto the beam? (add an amplitude or something)
-   - [ ] In coincidence_counting, make the measure_and_get_values function not block the GUI
+   - [X] In coincidence_counting, make the measure_and_get_values function not block the GUI
      this is caused by the rust function not release the GIL
      maybe pyobject3 has some way to release the GIL in this function?
