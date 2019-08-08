@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QGridLayout, QTabWidget, QGroupBox, QLabel, QScrollArea, QHBoxLayout, QComboBox
 from PyQt5.QtCore import QThread, QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtGui import QFont
 import pyqtgraph as pg
 from time import sleep
 import numpy as np
@@ -49,9 +50,12 @@ class ChannelSetting(QGroupBox):
         super().__init__()
         self.setTitle(name)
 
-        self.discriminator = pg.SpinBox(value=0.0, int=True, step=1)
-        self.zero_cross = pg.SpinBox(value=0.0, int=True, step=1)
-        self.offset = pg.SpinBox(value=0.0, int=True, step=1)
+        self.discriminator = pg.SpinBox(value=0.0,
+                                        int=True,
+                                        step=1,
+                                        decimals=10)
+        self.zero_cross = pg.SpinBox(value=0.0, int=True, step=1, decimals=10)
+        self.offset = pg.SpinBox(value=0.0, int=True, step=1, decimals=10)
 
         self.layout = QGridLayout()
 
@@ -276,6 +280,9 @@ class MeasurementCountDisplay(QWidget):
         self.accidentals = pg.ValueLabel()
         self.quantum_contrast = pg.ValueLabel()
 
+        f = QFont("Arial", 50)
+        self.coincidences_value.setFont(f)
+
         self.layout.addWidget(QLabel("Sync singles (1/s)"), 0, 0)
         self.layout.addWidget(self.sync_singles, 0, 1)
         self.layout.addWidget(QLabel("Other singles (1/s)"), 1, 0)
@@ -349,11 +356,13 @@ class DeviceMeasurement(QWidget):
         self.coincidences_window = pg.SpinBox(value=50000,
                                               int=True,
                                               bounds=(0, None),
-                                              step=1)
+                                              step=1,
+                                              decimals=8)
         self.histogram_bins = pg.SpinBox(value=100,
                                          int=True,
-                                         bounds=(0, 1000),
-                                         step=1)
+                                         bounds=(0, 2000),
+                                         step=1,
+                                         decimals=8)
 
         self.sync_channel = QComboBox()
         self.sync_channel.addItems(["Sync"] +
