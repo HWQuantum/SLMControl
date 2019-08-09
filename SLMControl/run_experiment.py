@@ -8,6 +8,7 @@ from slm_display import MultiSLMController
 from coincidence_counting import CoincidenceWidget
 from time import sleep
 import pickle
+import numpy as np
 
 
 class ExperimentController(QWidget):
@@ -36,33 +37,59 @@ class ExperimentController(QWidget):
         ''' Runs the experiment, using values set on the device measurement
         page
         '''
-        integration_time = 10000  # integration time in ms
-        coincidence_window = 5000  # coincidence window in ps
-        histogram_bins = 1000  # number of bins for the histogram
+        integration_time = 1000  # integration time in ms
+        coincidence_window = 3000  # coincidence window in ps
+        histogram_bins = 300  # number of bins for the histogram
         sync_channel = 0  # the channel the values should be compared with
 
         self.measurement_receiver = MeasurementReceiver()
-        oam_settings = [(1, 1, 0), (1, 2, 0), (1, 3, 0)]
+        angle_a = np.arange(0, np.pi / 2, np.pi / 8)
+        angle_b = np.linspace(0, 2 * np.pi, 4)
 
         self.measurement_receiver.set_key('coincidence_counter_values')
-        self.measurement_receiver.add_data(self.coincidence_widget.device_setup.get_values())
-        
-        for i, v in enumerate(oam_settings):
-            self.measurement_receiver.set_key(v)
-            self.slm_controller.set_values([{
-                "oam_controller": [{
-                    "amplitude": v[0],
-                    "ang_mom": v[1],
-                    "phase": v[2],
-                }]
-            }])
-            self.application.processEvents()
-            sleep(0.2)
-            self.measurement_receiver.add_data(
-                self.coincidence_widget.measurement_thread.
-                run_measurement_once(integration_time, coincidence_window,
-                                     histogram_bins, sync_channel))
-            print("Done {}/{}".format(i+1, len(oam_settings)))
+        self.measurement_receiver.add_data(
+            self.coincidence_widget.device_setup.get_values())
+        self.measurement_receiver.set_key('measurement_parameters')
+        self.measurement_receiver.add_data({
+            "integration_time": integration_time,
+            "coincidence_window": coincidence_window,
+            "histogram_bins": histogram_bins,
+            "sync_channel": sync_channel,
+        })
+
+        for i, a in enumerate(angle_a):
+            for j, b in enumerate(angle_b):
+                self.measurement_receiver.set_key(("angle_a_b", a, b))
+                self.slm_controller.set_values([{
+                    "oam_controller": [{
+                        "amplitude": 1,
+                        "ang_mom": 2,
+                        "phase": 0,
+                    }, {
+                        "amplitude": 1,
+                        "ang_mom": -2,
+                        "phase": a,
+                    }]
+                }, {
+                    "oam_controller": [{
+                        "amplitude": 1,
+                        "ang_mom": 2,
+                        "phase": 0,
+                    }, {
+                        "amplitude": 1,
+                        "ang_mom": -2,
+                        "phase": b,
+                    }]
+                }])
+                self.application.processEvents()
+                sleep(0.3)
+                self.measurement_receiver.add_data(
+                    self.coincidence_widget.measurement_thread.
+                    run_measurement_once(integration_time, coincidence_window,
+                                         histogram_bins, sync_channel))
+
+            print("Done {}/{}".format(i + 1, len(angle_a)))
+
         filename, _ = QFileDialog.getSaveFileName(self, "Save file", "")
         if filename:
             with open(filename, 'wb') as f:

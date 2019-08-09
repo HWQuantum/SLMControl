@@ -51,6 +51,7 @@ class MeasurementThread(QObject):
         values = hhlib_sys.measure_and_get_counts(self.dev, time,
                                                   coincidence_window, bins,
                                                   sync_channel)
+        self.measurement_done.emit(time, coincidence_window, *values)
         return (time, coincidence_window, *values)
 
 
