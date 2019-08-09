@@ -44,6 +44,15 @@ class MeasurementThread(QObject):
     def close_device(self):
         hhlib_sys.close_device(self.dev)
 
+    def run_measurement_once(self, time, coincidence_window, bins,
+                             sync_channel):
+        '''For running a single measurement, returning a value
+        '''
+        values = hhlib_sys.measure_and_get_counts(self.dev, time,
+                                                  coincidence_window, bins,
+                                                  sync_channel)
+        return (time, coincidence_window, *values)
+
 
 class ChannelSetting(QGroupBox):
     def __init__(self, name):
