@@ -43,7 +43,7 @@ class ExperimentController(QWidget):
         sync_channel = 0  # the channel the values should be compared with
 
         self.measurement_receiver = MeasurementReceiver()
-        angle_a = np.arange(0, np.pi / 2, np.pi / 8)
+        angle_a = np.arange(0, 2*np.pi, np.pi / 2)
         angle_b = np.linspace(0, 2 * np.pi, 200)
 
         self.measurement_receiver.set_key('coincidence_counter_values')
