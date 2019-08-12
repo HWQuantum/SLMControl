@@ -37,14 +37,15 @@ class ExperimentController(QWidget):
         ''' Runs the experiment, using values set on the device measurement
         page
         '''
-        integration_time = 1000  # integration time in ms
+        integration_time = 20000  # integration time in ms
         coincidence_window = 3000  # coincidence window in ps
         histogram_bins = 300  # number of bins for the histogram
         sync_channel = 0  # the channel the values should be compared with
 
         self.measurement_receiver = MeasurementReceiver()
-        angle_a = np.arange(0, 2*np.pi, np.pi / 2)
-        angle_b = np.linspace(0, 2 * np.pi, 200)
+        angle_a = np.arange(0, 2 * np.pi, np.pi / 2)
+        # angle_b = np.linspace(0, 2 * np.pi, 200)
+        angle_b = np.arange(0 + np.pi / 4, 2 * np.pi, np.pi / 2)
 
         self.measurement_receiver.set_key('coincidence_counter_values')
         self.measurement_receiver.add_data(
@@ -57,38 +58,40 @@ class ExperimentController(QWidget):
             "sync_channel": sync_channel,
         })
 
-        for i, a in enumerate(angle_a):
-            for j, b in enumerate(angle_b):
-                self.measurement_receiver.set_key(("angle_a_b", a, b))
-                self.slm_controller.set_values([{
-                    "oam_controller": [{
-                        "amplitude": 1,
-                        "ang_mom": 2,
-                        "phase": 0,
+        for l in [1, 2, 3, 4, 5]:
+            for i, a in enumerate(angle_a):
+                for j, b in enumerate(angle_b):
+                    self.measurement_receiver.set_key(("l_a_b", l, a, b))
+                    self.slm_controller.set_values([{
+                        "oam_controller": [{
+                            "amplitude": 1,
+                            "ang_mom": l,
+                            "phase": 0,
+                        }, {
+                            "amplitude": 1,
+                            "ang_mom": -l,
+                            "phase": a,
+                        }]
                     }, {
-                        "amplitude": 1,
-                        "ang_mom": -2,
-                        "phase": a,
-                    }]
-                }, {
-                    "oam_controller": [{
-                        "amplitude": 1,
-                        "ang_mom": 2,
-                        "phase": 0,
-                    }, {
-                        "amplitude": 1,
-                        "ang_mom": -2,
-                        "phase": b,
-                    }]
-                }])
-                self.application.processEvents()
-                sleep(0.3)
-                self.measurement_receiver.add_data(
-                    self.coincidence_widget.measurement_thread.
-                    run_measurement_once(integration_time, coincidence_window,
-                                         histogram_bins, sync_channel))
+                        "oam_controller": [{
+                            "amplitude": 1,
+                            "ang_mom": l,
+                            "phase": 0,
+                        }, {
+                            "amplitude": 1,
+                            "ang_mom": -l,
+                            "phase": b,
+                        }]
+                    }])
+                    self.application.processEvents()
+                    sleep(0.3)
+                    self.measurement_receiver.add_data(
+                        self.coincidence_widget.measurement_thread.
+                        run_measurement_once(integration_time,
+                                             coincidence_window,
+                                             histogram_bins, sync_channel))
 
-            print("Done {}/{}".format(i + 1, len(angle_a)))
+                print("Done {}/{}".format(i + 1, len(angle_a)))
 
         filename, _ = QFileDialog.getSaveFileName(self, "Save file", "")
         if filename:
