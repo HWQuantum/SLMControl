@@ -516,5 +516,7 @@ if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
     app = QApplication([])
     w = MultiSLMController(app.screens(), [(500, 500), (500, 500)])
+    x, y = np.mgrid[-1:1:500j, -1:1:500j]
+    # w.slm_tabs[0].overlay = np.sum([a*np.exp(1j*(l*np.arctan2(y, x))) for l, a in [(-1, 1), (0, 0), (1, 1)]], axis=0)
     w.show()
     app.exec()

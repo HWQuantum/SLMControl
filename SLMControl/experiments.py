@@ -174,7 +174,8 @@ def coincidences_5x5_with_concentration(slm_widget, coincidence_widget,
         ],
                axis=0) for p_x, p_y, d_x, d_y in slm_vals
     ]
-    slm_widget.set_values([{"overlay": o} for o in overlays])
+    for i, o in overlays:
+        slm_widget.slm_tabs[i].overlay = o
 
     measurement_receiver = MeasurementReceiver()
 
