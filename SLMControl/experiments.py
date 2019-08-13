@@ -161,20 +161,20 @@ def coincidences_5x5_with_concentration(slm_widget, coincidence_widget,
     histogram_bins = 300  # number of bins for the histogram
     sync_channel = 0  # the channel the values should be compared with
 
-    slm_vals = [(*t.position_controller.get_values(),
-                 *t.diffraction_grating.get_values())
-                for t in slm_widget.slm_tabs]
-    x, y = np.mgrid[-1:1:500j, -1:1:500j]
+    # slm_vals = [(*t.position_controller.get_values(),
+    #              *t.diffraction_grating.get_values())
+    #             for t in slm_widget.slm_tabs]
+    # x, y = np.mgrid[-1:1:500j, -1:1:500j]
 
-    overlays = [
-        np.sum([
-            a * np.exp(1j * (l * np.arctan2(y - p_y, x - p_x)))
-            for l, a in [(-2, 1), (-1, 0.75), (0, 0.5), (1, 0.75), (2, 1)]
-        ],
-               axis=0) for p_x, p_y, d_x, d_y in slm_vals
-    ]
-    for i, o in enumerate(overlays):
-        slm_widget.slm_tabs[i].overlay = o
+    # overlays = [
+    #     np.sum([
+    #         a * np.exp(1j * (l * np.arctan2(y - p_y, x - p_x)))
+    #         for l, a in [(-2, 1), (-1, 0.75), (0, 0.5), (1, 0.75), (2, 1)]
+    #     ],
+    #            axis=0) for p_x, p_y, d_x, d_y in slm_vals
+    # ]
+    # for i, o in enumerate(overlays):
+    #     slm_widget.slm_tabs[i].overlay = o
 
     measurement_receiver = MeasurementReceiver()
 
@@ -188,8 +188,64 @@ def coincidences_5x5_with_concentration(slm_widget, coincidence_widget,
         "sync_channel": sync_channel,
     })
 
-    for a in [-2, -1, 0, 1, 2]:
-        for b in [-2, -1, 0, 1, 2]:
+    l_values = np.linspace(-2, 2, 5)
+
+    l_counts = []
+
+    for l in l_values:
+        slm_widget.set_values([{
+            "oam_controller": [{
+                "amplitude": 1,
+                "ang_mom": l,
+                "phase": 0,
+            }]
+        }, {
+            "oam_controller": [{
+                "amplitude": 1,
+                "ang_mom": -l,
+                "phase": 0,
+            }]
+        }])
+
+        application.processEvents()
+        sleep(0.3)
+
+        l_counts.append(
+            coincidence_widget.measurement_thread.run_measurement_once(
+                20000, coincidence_window, histogram_bins, sync_channel)[3][3])
+
+    print("Found concentrations :^)")
+
+    # these are the normalised values to do concentration with
+    l_norms = [np.sqrt(min(l_counts) / i) for i in l_counts]
+    slm_vals = [(*t.position_controller.get_values(),
+                 *t.diffraction_grating.get_values())
+                for t in slm_widget.slm_tabs]
+    x, y = np.mgrid[-1:1:500j, -1:1:500j]
+
+    overlays = []
+    overlays.append(
+        np.sum([
+            a * np.exp(1j *
+                       (l_values[i] *
+                        np.arctan2(y - slm_vals[0][1], x - slm_vals[0][0])))
+            for i, a in enumerate(l_norms)
+        ],
+               axis=0))
+    overlays.append(
+        np.sum([
+            a * np.exp(1j *
+                       (-l_values[i] *
+                        np.arctan2(y - slm_vals[1][1], x - slm_vals[1][0])))
+            for i, a in enumerate(l_norms)
+        ],
+               axis=0))
+
+    for i, o in enumerate(overlays):
+        slm_widget.slm_tabs[i].overlay = o
+
+    for a in l_values:
+        for b in l_values:
             measurement_receiver.set_key(("l1_l2", a, b))
             slm_widget.set_values([{
                 "oam_controller": [{
