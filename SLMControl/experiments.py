@@ -189,6 +189,7 @@ def coincidences_5x5_with_concentration(slm_widget, coincidence_widget,
     })
 
     l_values = np.linspace(-2, 2, 5)
+    l_counts = []
 
     for l in l_values:
         slm_widget.set_values([{
