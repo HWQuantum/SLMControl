@@ -246,6 +246,9 @@ class SLMController(QWidget):
                                                                  1j)]
         self.slm_size = slm_size
 
+        # this is an overlay that can be added to the slm display
+        # it can be used for eg. entanglement concentration
+        self.overlay = None
         screen_selector = QComboBox()
         oam_scroll_area = QScrollArea()
         position_zernike_scroll_area = QScrollArea()
@@ -255,12 +258,13 @@ class SLMController(QWidget):
         self.oam_controller = OAMControlSet()
         self.plot = FullScreenPlot(slm_size, slm_size)
         self.position_zernike_controller = ZernikeSet(
-            self.x, self.y, [(2, 2), (0, 2), (-2, 2)],
+            self.x,
+            self.y, [(2, 2), (0, 2), (-2, 2)],
             title="Position Zernike Controller")
-        self.slm_zernike_controller = ZernikeSet(self.x, self.y, [(2, 2),
-                                                                  (0, 2),
-                                                                  (-2, 2)],
-                                                 title="SLM Zernike Controller")
+        self.slm_zernike_controller = ZernikeSet(
+            self.x,
+            self.y, [(2, 2), (0, 2), (-2, 2)],
+            title="SLM Zernike Controller")
         self.position_controller = XYController("Position")
 
         self.lut_control = None
@@ -288,7 +292,8 @@ class SLMController(QWidget):
                                                               currentIndex()]))
 
         self.oam_controller.value_changed.connect(self.update_image)
-        self.position_zernike_controller.value_changed.connect(self.update_image)
+        self.position_zernike_controller.value_changed.connect(
+            self.update_image)
         self.slm_zernike_controller.value_changed.connect(self.update_image)
         self.diffraction_grating.value_changed.connect(self.update_image)
         self.position_controller.value_changed.connect(self.update_image)
@@ -315,7 +320,8 @@ class SLMController(QWidget):
 
     def change_zernike_position(self):
         x, y = self.position_controller.get_values()
-        self.position_zernike_controller.change_position(self.x-x, self.y-y)
+        self.position_zernike_controller.change_position(
+            self.x - x, self.y - y)
 
     def open_lut_control(self):
         '''Open the LUT control if it's not open already
@@ -352,8 +358,12 @@ class SLMController(QWidget):
             for p in self.oam_controller.get_values()
         ],
                            axis=0)
-        new_image = np.angle(slm_zernike_image * position_zernike_image *
-                             oam_image)
+        if self.overlay is None:
+            new_image = np.angle(slm_zernike_image * position_zernike_image *
+                                 oam_image)
+        else:
+            new_image = np.angle(slm_zernike_image * position_zernike_image *
+                                 oam_image * self.overlay)
         self.plot.set_and_update_image(new_image)
         self.slm_window.set_image(new_image)
 
@@ -391,6 +401,8 @@ class SLMController(QWidget):
             self.position_controller.get_values(),
             "lut_list":
             self.lut_list,
+            "overlay":
+            self.overlay,
         }
 
     def set_values(self, *args, **kwargs):
@@ -401,6 +413,7 @@ class SLMController(QWidget):
         slm_zernike_controller,
         position_controller,
         diffraction_grating,
+        overlay,
         lut_list,
         '''
         for dictionary in args:
