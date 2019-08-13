@@ -161,15 +161,18 @@ def coincidences_5x5_with_concentration(slm_widget, coincidence_widget,
     histogram_bins = 300  # number of bins for the histogram
     sync_channel = 0  # the channel the values should be compared with
 
-    slm_pos = [t.position_controller.get_values() for t in slm_widget.slm_tabs]
+    slm_vals = [(*t.position_controller.get_values(),
+                 *t.diffraction_grating.get_values())
+                for t in slm_widget.slm_tabs]
     x, y = np.mgrid[-1:1:500j, -1:1:500j]
 
     overlays = [
         np.sum([
-            a * np.exp(1j * l * np.arctan2(y - p_y, x - p_x))
+            a * np.exp(1j * (l * np.arctan2(y - p_y, x - p_x) +
+                             (d_x * x + d_y * y)))
             for l, a in [(-2, 1), (-1, 0.75), (0, 0.5), (1, 0.75), (2, 1)]
         ],
-               axis=0) for p_x, p_y in slm_pos
+               axis=0) for p_x, p_y, d_x, d_y in slm_vals
     ]
     slm_widget.set_values([{"overlay": o} for o in overlays])
 
