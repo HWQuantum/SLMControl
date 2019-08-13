@@ -190,8 +190,6 @@ def coincidences_5x5_with_concentration(slm_widget, coincidence_widget,
 
     l_values = np.linspace(-2, 2, 5)
 
-    l_counts = []
-
     for l in l_values:
         slm_widget.set_values([{
             "oam_controller": [{
@@ -217,7 +215,7 @@ def coincidences_5x5_with_concentration(slm_widget, coincidence_widget,
     print("Found concentrations :^)")
 
     # these are the normalised values to do concentration with
-    l_norms = [np.sqrt(min(l_counts) / i) for i in l_counts]
+    l_norms = [min(l_counts)/i for i in l_counts]
     slm_vals = [(*t.position_controller.get_values(),
                  *t.diffraction_grating.get_values())
                 for t in slm_widget.slm_tabs]
