@@ -168,8 +168,7 @@ def coincidences_5x5_with_concentration(slm_widget, coincidence_widget,
 
     overlays = [
         np.sum([
-            a * np.exp(1j * (l * np.arctan2(y - p_y, x - p_x) +
-                             (d_x * x + d_y * y)))
+            a * np.exp(1j * (l * np.arctan2(y - p_y, x - p_x)))
             for l, a in [(-2, 1), (-1, 0.75), (0, 0.5), (1, 0.75), (2, 1)]
         ],
                axis=0) for p_x, p_y, d_x, d_y in slm_vals
