@@ -148,3 +148,65 @@ def coincidences_5x5(slm_widget, coincidence_widget, application):
 
             print("Done a: {}, b: {}".format(a, b))
     return measurement_receiver
+
+
+def coincidences_5x5_with_concentration(slm_widget, coincidence_widget,
+                                        application):
+    '''Takes the coincidences for l = [-2..2]
+    With an integration time of 10s
+    Add in a modification to the 0 mode to try to concentrate it
+    '''
+    integration_time = 10000  # integration time in ms
+    coincidence_window = 3000  # coincidence window in ps
+    histogram_bins = 300  # number of bins for the histogram
+    sync_channel = 0  # the channel the values should be compared with
+
+    slm_pos = [t.position_controller.get_values() for t in slm_widget.slm_tabs]
+    x, y = np.mgrid[-1:1:500j, -1:1:500j]
+
+    overlays = [
+        np.sum([
+            a * np.exp(1j * np.arctan2(y - p_y, x - p_x))
+            for l, a in [(-2, 1), (-1, 0.75), (0, 0.5), (1, 0.75), (2, 1)]
+        ],
+               axis=0) for p_x, p_y in slm_pos
+    ]
+    slm_widget.set_values([{"overlay": o} for o in overlays])
+
+    measurement_receiver = MeasurementReceiver()
+
+    measurement_receiver.set_key('coincidence_counter_values')
+    measurement_receiver.add_data(coincidence_widget.device_setup.get_values())
+    measurement_receiver.set_key('measurement_parameters')
+    measurement_receiver.add_data({
+        "integration_time": integration_time,
+        "coincidence_window": coincidence_window,
+        "histogram_bins": histogram_bins,
+        "sync_channel": sync_channel,
+    })
+
+    for a in [-2, -1, 0, 1, 2]:
+        for b in [-2, -1, 0, 1, 2]:
+            measurement_receiver.set_key(("l1_l2", a, b))
+            slm_widget.set_values([{
+                "oam_controller": [{
+                    "amplitude": 1,
+                    "ang_mom": a,
+                    "phase": 0,
+                }]
+            }, {
+                "oam_controller": [{
+                    "amplitude": 1,
+                    "ang_mom": b,
+                    "phase": 0,
+                }]
+            }])
+            application.processEvents()
+            sleep(0.3)
+            measurement_receiver.add_data(
+                coincidence_widget.measurement_thread.run_measurement_once(
+                    integration_time, coincidence_window, histogram_bins,
+                    sync_channel))
+
+            print("Done a: {}, b: {}".format(a, b))
+    return measurement_receiver
