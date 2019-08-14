@@ -235,7 +235,7 @@ def coincidences_9x9_with_concentration(slm_widget, coincidence_widget,
     overlays.append(
         np.sum([
             a * np.exp(1j *
-                       (l_values[i] *
+                       (-l_values[i] *
                         np.arctan2(y - slm_vals[1][1], x - slm_vals[1][0])))
             for i, a in enumerate(l_norms)
         ],
