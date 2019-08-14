@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QWidget, QGridLayout, QPushButton, QFileDialog
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 from slm_display import MultiSLMController
 from coincidence_counting import CoincidenceWidget
-from experiments import coincidences_9x9_with_concentration
+from experiments import coincidences_3x3_with_correction
 
 
 class ExperimentController(QWidget):
@@ -36,7 +36,7 @@ class ExperimentController(QWidget):
         ''' Runs the experiment, using values set on the device measurement
         page
         '''
-        self.measurement_receiver = coincidences_9x9_with_concentration(
+        self.measurement_receiver = coincidences_3x3_with_correction(
             self.slm_controller, self.coincidence_widget, self.application)
 
         filename, _ = QFileDialog.getSaveFileName(self, "Save file", "")
