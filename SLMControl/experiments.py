@@ -150,13 +150,13 @@ def coincidences_5x5(slm_widget, coincidence_widget, application):
     return measurement_receiver
 
 
-def coincidences_5x5_with_concentration(slm_widget, coincidence_widget,
+def coincidences_9x9_with_concentration(slm_widget, coincidence_widget,
                                         application):
-    '''Takes the coincidences for l = [-2..2]
+    '''Takes the coincidences for l = [-3..3]
     With an integration time of 10s
     Add in a modification to the 0 mode to try to concentrate it
     '''
-    integration_time = 10000  # integration time in ms
+    integration_time = 5000  # integration time in ms
     coincidence_window = 3000  # coincidence window in ps
     histogram_bins = 300  # number of bins for the histogram
     sync_channel = 0  # the channel the values should be compared with
@@ -188,7 +188,7 @@ def coincidences_5x5_with_concentration(slm_widget, coincidence_widget,
         "sync_channel": sync_channel,
     })
 
-    l_values = np.linspace(-2, 2, 5)
+    l_values = np.linspace(-4, 4, 9)
     l_counts = []
 
     for l in l_values:
@@ -216,7 +216,8 @@ def coincidences_5x5_with_concentration(slm_widget, coincidence_widget,
     print("Found concentrations :^)")
 
     # these are the normalised values to do concentration with
-    l_norms = [min(l_counts)/i for i in l_counts]
+    min_l_val = min(l_counts)
+    l_norms = [np.sqrt(min_l_val/i) for i in l_counts]
     slm_vals = [(*t.position_controller.get_values(),
                  *t.diffraction_grating.get_values())
                 for t in slm_widget.slm_tabs]
@@ -226,7 +227,7 @@ def coincidences_5x5_with_concentration(slm_widget, coincidence_widget,
     overlays.append(
         np.sum([
             a * np.exp(1j *
-                       (-l_values[i] *
+                       (l_values[i] *
                         np.arctan2(y - slm_vals[0][1], x - slm_vals[0][0])))
             for i, a in enumerate(l_norms)
         ],
