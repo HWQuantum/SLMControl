@@ -448,7 +448,7 @@ class MultiPixelController(QWidget):
 if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
     app = QApplication([])
-    # w = MultiPixelController(app.screens(), [(512, 512), (512, 512)])
-    w = PixelEntanglementController("hi", app.screens(), (512, 512))
+    w = MultiPixelController(app.screens(), [(512, 512), (512, 512)])
+    # w = PixelEntanglementController("hi", app.screens(), (512, 512))
     w.show()
     app.exec()
