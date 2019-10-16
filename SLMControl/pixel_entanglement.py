@@ -94,7 +94,7 @@ def basis(dim, a, n):
     '''
     if a == 0:
         v = np.zeros(dim, dtype=np.complex128)
-        v[n] = 1
+        v[n % dim] = 1
         return v
     else:
         j = (dim - 1) / 2
@@ -154,12 +154,15 @@ class PixelEntanglementController(QWidget):
     '''Controls for pixel entanglement
     '''
     def __init__(self, window_title, screens, slm_size):
+        super().__init__()
         self.screens = screens
 
         layout = QGridLayout()
         self.x, self.y = np.mgrid[-1:1:(slm_size[0] * 1j), -1:1:(slm_size[1] *
                                                                  1j)]
         self.slm_size = slm_size
+
+        self.overlay = None
 
         screen_selector = QComboBox()
         position_zernike_scroll_area = QScrollArea()
@@ -168,11 +171,11 @@ class PixelEntanglementController(QWidget):
         # Pixel pattern controls
         self.position = XYController("Pixel Centre")
         self.diffraction_grating = XYController("Diffraction Grating")
-        self.pixel_radius = pg.SpinBox()
-        self.circle_radius = pg.SpinBox()
-        self.dim = pg.SpinBox(int=True, step=1, bounds=(2, None))
-        self.mub_selection = pg.SpinBox(int=True, step=1)
-        self.basis_selection = pg.SpinBox(int=True, step=1)
+        self.pixel_radius = pg.SpinBox(value=1)
+        self.circle_radius = pg.SpinBox(value=1)
+        self.dim = pg.SpinBox(value=2, int=True, step=1, bounds=(2, None))
+        self.mub_selection = pg.SpinBox(value=0, int=True, step=1)
+        self.basis_selection = pg.SpinBox(value=0, int=True, step=1)
 
         # Lookup table controls
         self.lut_control = None
@@ -207,7 +210,6 @@ class PixelEntanglementController(QWidget):
             lambda _: self.slm_window.set_screen(self.screens[screen_selector.
                                                               currentIndex()]))
 
-        self.oam_controller.value_changed.connect(self.update_image)
         self.pixel_radius.sigValueChanged.connect(self.update_image)
         self.circle_radius.sigValueChanged.connect(self.update_image)
         self.dim.sigValueChanged.connect(self.update_image)
@@ -224,21 +226,21 @@ class PixelEntanglementController(QWidget):
         layout.addWidget(QLabel("Display on:"), 0, 1)
         layout.addWidget(screen_selector, 0, 2)
         layout.addWidget(self.diffraction_grating, 0, 3)
-        layout.addWidget(self.plot, 1, 3, 1, 1)
-        layout.addWidget(QLabel("Pixel radius:"), 2, 0, 1, 1)
-        layout.addWidget(self.pixel_radius, 2, 1, 1, 1)
-        layout.addWidget(QLabel("Circle radius:"), 2, 2, 1, 1)
-        layout.addWidget(self.pixel_radius, 2, 3, 1, 1)
-        layout.addWidget(QLabel("Dimension:"), 3, 1, 1, 1)
+        layout.addWidget(self.plot, 1, 3, 5, 1)
+        layout.addWidget(QLabel("Pixel radius:"), 1, 0, 1, 1)
+        layout.addWidget(self.pixel_radius, 1, 1, 1, 1)
+        layout.addWidget(QLabel("Circle radius:"), 2, 0, 1, 1)
+        layout.addWidget(self.circle_radius, 2, 1, 1, 1)
+        layout.addWidget(QLabel("Dimension:"), 3, 0, 1, 1)
         layout.addWidget(self.dim, 3, 1, 1, 1)
-        layout.addWidget(QLabel("MUB:"), 3, 2, 1, 1)
-        layout.addWidget(self.mub_selection, 3, 3, 1, 1)
-        layout.addWidget(QLabel("Basis:"), 3, 4, 1, 1)
-        layout.addWidget(self.basis_selection, 3, 5, 1, 1)
-        layout.addWidget(self.lut_control_button, 4, 0, 1, 1)
-        layout.addWidget(self.position, 4, 1, 1, 3)
-        layout.addWidget(position_zernike_scroll_area, 5, 0, 1, 2)
-        layout.addWidget(slm_zernike_scroll_area, 5, 2, 1, 2)
+        layout.addWidget(QLabel("MUB:"), 4, 0, 1, 1)
+        layout.addWidget(self.mub_selection, 4, 1, 1, 1)
+        layout.addWidget(QLabel("Basis:"), 5, 0, 1, 1)
+        layout.addWidget(self.basis_selection, 5, 1, 1, 1)
+        layout.addWidget(self.lut_control_button, 6, 0, 1, 1)
+        layout.addWidget(self.position, 6, 1, 1, 3)
+        layout.addWidget(position_zernike_scroll_area, 7, 0, 1, 2)
+        layout.addWidget(slm_zernike_scroll_area, 7, 2, 1, 2)
 
         self.setLayout(layout)
         self.update_image()
@@ -278,14 +280,16 @@ class PixelEntanglementController(QWidget):
         x, y = self.position.get_values()
         pixel_image = complex_field(
             basis(self.dim.value(), self.mub_selection.value(),
-                  self.basis_selection()), self.x, self.y,
-            self.pixel_radius.value(), self.circle_radius.value(), (x, y))
+                  self.basis_selection.value()), self.x, self.y,
+            self.pixel_radius.value(), self.circle_radius.value(),
+            (x, y)) * np.exp(1j * (diff_x * self.x + diff_y * self.y))
         if self.overlay is None:
             new_image = np.angle(slm_zernike_image * position_zernike_image *
-                                 pixel_image)
+                                 pixel_image) * np.abs(pixel_image)
         else:
-            new_image = np.angle(slm_zernike_image * position_zernike_image *
-                                 pixel_image * self.overlay)
+            new_image = np.angle(
+                slm_zernike_image * position_zernike_image * pixel_image *
+                self.overlay) * np.abs(pixel_image)
         self.plot.set_and_update_image(new_image)
         self.slm_window.set_image(new_image)
 
@@ -363,3 +367,10 @@ class PixelEntanglementController(QWidget):
                     getattr(self, key).set_values(value)
                 except AttributeError:
                     pass
+
+if __name__ == '__main__':
+    from PyQt5.QtWidgets import QApplication
+    app = QApplication([])
+    w = PixelEntanglementController("hello", app.screens(), (500, 500))
+    w.show()
+    app.exec()
