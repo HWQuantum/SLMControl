@@ -55,6 +55,20 @@ def point_in_circle(x, y, c):
     return ((x - c[1][0])**2 + (y - c[1][1])**2) < c[0]**2
 
 
+@njit()
+def point_in_slice(x, y, r, R, theta_1, theta_2, c):
+    '''Check if the given point is inside the given pizza slice
+    The pizza slice is defined by two angles (theta_1, theta_2),
+    which the angle of the point must be inside.
+    The centre of the circle is given by c
+    r gives a limit to the inside of the circle and
+    R gives a limit to the outside of the circle
+    '''
+    theta = np.arctan2(y - c[1], x - c[0]) % (np.pi * 2)
+    mag = (x - c[0])**2 + (y - c[1])**2
+    return (theta_1 <= theta) & (theta < theta_2) & (r**2 < mag) & (mag < R**2)
+
+
 def complex_field(components,
                   X,
                   Y,
@@ -80,6 +94,39 @@ def complex_field(components,
             X / circle_radius - circle_position[0],
             Y / circle_radius - circle_position[1],
             (pixel_radius * radii_ci[n_pixels], coords))
+
+    return field
+
+
+def pizza_field(components,
+                X,
+                Y,
+                circle_inner_radius=0,
+                circle_outer_radius=1,
+                circle_position=(0, 0),
+                slice_angle_spacing=0,
+                rotation=0):
+    '''Take the components of a vector, the X and Y matrices (from meshgrid)
+    and return the pizza representing the state.
+    slice_angle_spacing gives the separation between slices in radians
+
+    returns the complex field over X and Y which represents this vector
+    '''
+    n_slices = len(components)
+    lower_angle = np.linspace(0, 2 * np.pi - (2 / n_slices * np.pi),
+                              n_slices) + slice_angle_spacing + rotation
+    upper_angle = np.linspace(2 / n_slices * np.pi, 2 * np.pi,
+                              n_slices) - slice_angle_spacing + rotation
+    field = np.zeros(X.shape, dtype=np.complex128)
+    if n_slices > 1:
+        for i, p in enumerate(components):
+            field += p * point_in_slice(X, Y, circle_inner_radius,
+                                        circle_outer_radius, lower_angle[i],
+                                        upper_angle[i], circle_position)
+    else:
+        field += components[0] * point_in_slice(
+            X, Y, circle_inner_radius, circle_outer_radius, lower_angle[i],
+            upper_angle[i], circle_position)
 
     return field
 
