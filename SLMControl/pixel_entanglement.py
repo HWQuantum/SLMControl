@@ -10,14 +10,14 @@ import numpy as np
 from numba import njit
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-# from slm_display import SLMDisplay, FullScreenPlot
-from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel, QGroupBox, QComboBox, QScrollArea, QPushButton
+from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel, QGroupBox, QComboBox, QScrollArea, QPushButton, QFileDialog
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 import pyqtgraph as pg
 from slm_display import FullScreenPlot, SLMDisplay, points_to_lut
 from lut_control import LUTWidget
 from zernike_controls import ZernikeSet
 from oam_pattern_controls import XYController
+import json
 
 radii_sq = np.loadtxt(
     'circle_packing/radius_square.txt'
@@ -368,9 +368,86 @@ class PixelEntanglementController(QWidget):
                 except AttributeError:
                     pass
 
+
+class MultiPixelController(QWidget):
+    '''Controls for pixel entanglement on two slms
+    '''
+    def __init__(self, screens, slm_sizes):
+        super().__init__()
+        self.layout = QGridLayout()
+        save_button = QPushButton("Save values")
+        load_button = QPushButton("Load values")
+
+        self.slms = [
+            PixelEntanglementController("SLM {}".format(i), screens, size)
+            for i, size in enumerate(slm_sizes)
+        ]
+
+        self.layout.addWidget(save_button, 0, 0)
+        self.layout.addWidget(load_button, 0, 1)
+        self.layout.addWidget(self.slms[0], 1, 0, 1, 2)
+        self.layout.addWidget(self.slms[1], 2, 0, 1, 2)
+
+        self.setLayout(self.layout)
+
+        save_button.clicked.connect(self.save_file)
+        load_button.clicked.connect(self.open_file)
+
+    def closeEvent(self, event):
+        for slm in self.slms:
+            slm.close_slm_window()
+
+    def get_values(self):
+        '''Returns a list of slm settings
+        ready and prepared to be tucked in a json
+        '''
+        return [slm_screen.get_values() for slm_screen in self.slms]
+
+    def set_values(self, slm_list):
+        '''Accepts a list of slm settings
+        '''
+        for i, slm in enumerate(slm_list):
+            if i < len(self.slms):
+                self.slms[i].set_values(slm)
+
+    def save_values_to_json_file(self, filename):
+        '''Save the values to a given filename
+        doesn't catch any errors
+        '''
+        values = self.get_values()
+        with open(filename, 'w') as f:
+            json.dump(values, f)
+
+    def read_values_from_json_file(self, filename):
+        '''Read the values from a given filename
+        doesn't catch any errors
+        '''
+        with open(filename, 'r') as f:
+            self.set_values(json.load(f))
+
+    def try_read_values_from_json_file(self, filename):
+        '''wraps reading values in a try except thing,
+        so it doesn't fail when reading a naughty file
+        '''
+        try:
+            self.read_values_from_json_file(filename)
+        except:
+            pass
+
+    def open_file(self):
+        filename, _ = QFileDialog.getOpenFileName(self, "Open File", "")
+        if filename:
+            self.try_read_values_from_json_file(filename)
+
+    def save_file(self):
+        filename, _ = QFileDialog.getSaveFileName(self, "Save file", "")
+        if filename:
+            self.save_values_to_json_file(filename)
+
+
 if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
     app = QApplication([])
-    w = PixelEntanglementController("hello", app.screens(), (500, 500))
+    w = MultiPixelController(app.screens(), [(512, 512), (512, 512)])
     w.show()
     app.exec()
