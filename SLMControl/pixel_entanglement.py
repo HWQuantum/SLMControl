@@ -226,7 +226,7 @@ class PixelEntanglementController(QWidget):
         layout.addWidget(QLabel("Display on:"), 0, 1)
         layout.addWidget(screen_selector, 0, 2)
         layout.addWidget(self.diffraction_grating, 0, 3)
-        layout.addWidget(self.plot, 1, 3, 5, 1)
+        layout.addWidget(self.plot, 1, 3, 8, 1)
         layout.addWidget(QLabel("Pixel radius:"), 1, 0, 1, 1)
         layout.addWidget(self.pixel_radius, 1, 1, 1, 1)
         layout.addWidget(QLabel("Circle radius:"), 2, 0, 1, 1)
@@ -238,9 +238,9 @@ class PixelEntanglementController(QWidget):
         layout.addWidget(QLabel("Basis:"), 5, 0, 1, 1)
         layout.addWidget(self.basis_selection, 5, 1, 1, 1)
         layout.addWidget(self.lut_control_button, 6, 0, 1, 1)
-        layout.addWidget(self.position, 6, 1, 1, 3)
+        layout.addWidget(self.position, 6, 1, 1, 1)
         layout.addWidget(position_zernike_scroll_area, 7, 0, 1, 2)
-        layout.addWidget(slm_zernike_scroll_area, 7, 2, 1, 2)
+        layout.addWidget(slm_zernike_scroll_area, 8, 0, 1, 2)
 
         self.setLayout(layout)
         self.update_image()
@@ -385,8 +385,8 @@ class MultiPixelController(QWidget):
 
         self.layout.addWidget(save_button, 0, 0)
         self.layout.addWidget(load_button, 0, 1)
-        self.layout.addWidget(self.slms[0], 1, 0, 1, 2)
-        self.layout.addWidget(self.slms[1], 2, 0, 1, 2)
+        for i, slm in enumerate(self.slms):
+            self.layout.addWidget(slm, i + 1, 0, 1, 2)
 
         self.setLayout(self.layout)
 
@@ -448,6 +448,7 @@ class MultiPixelController(QWidget):
 if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
     app = QApplication([])
-    w = MultiPixelController(app.screens(), [(512, 512), (512, 512)])
+    # w = MultiPixelController(app.screens(), [(512, 512), (512, 512)])
+    w = PixelEntanglementController("hi", app.screens(), (512, 512))
     w.show()
     app.exec()
