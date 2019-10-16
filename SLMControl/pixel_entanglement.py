@@ -7,14 +7,14 @@ or a circle with radius 1
 '''
 
 import numpy as np
-from numba import njit, jit
+from numba import njit
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 # from slm_display import SLMDisplay, FullScreenPlot
 from PyQt5.QtWidgets import QWidget, QGridLayout, QLabel, QGroupBox, QComboBox, QScrollArea, QPushButton
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 import pyqtgraph as pg
-from slm_display import FullScreenPlot, SLMDisplay
+from slm_display import FullScreenPlot, SLMDisplay, points_to_lut
 from lut_control import LUTWidget
 from zernike_controls import ZernikeSet
 from oam_pattern_controls import XYController
@@ -165,6 +165,7 @@ class PixelEntanglementController(QWidget):
         position_zernike_scroll_area = QScrollArea()
         slm_zernike_scroll_area = QScrollArea()
 
+        # Pixel pattern controls
         self.position = XYController("Pixel Centre")
         self.diffraction_grating = XYController("Diffraction Grating")
         self.pixel_radius = pg.SpinBox()
@@ -173,72 +174,20 @@ class PixelEntanglementController(QWidget):
         self.mub_selection = pg.SpinBox(int=True, step=1)
         self.basis_selection = pg.SpinBox(int=True, step=1)
 
-        self.position_zernike_controller = ZernikeSet(
-            self.x,
-            self.y, [(2, 2), (0, 2), (-2, 2)],
-            title="Position Zernike Controller")
-        self.slm_zernike_controller = ZernikeSet(
-            self.x,
-            self.y, [(2, 2), (0, 2), (-2, 2)],
-            title="SLM Zernike Controller")
-
-        self.plot = FullScreenPlot(slm_size, slm_size)
-
-        self.slm_window = SLMDisplay(window_title,
-                                     screens[screen_selector.currentIndex()],
-                                     slm_size)
-
-        screen_selector.currentIndexChanged.connect(
-            lambda _: self.slm_window.set_screen(self.screens[screen_selector.
-                                                              currentIndex()]))
-
-
-class PixelEntanglementSLMController(QWidget):
-    '''A controller for pixel entanglement in a single SLM
-    '''
-    def __init__(self, window_title, screens, slm_size):
-        '''Pass a list of screens to allow this to select what screen a
-        pattern is displayed on
-        Pass slm_size to set the size of the slm to display on
-        (how many pixels it has)
-        There are two zernike controls: one for position and one for the slm
-        '''
-        super().__init__()
-        self.screens = screens
-
-        layout = QGridLayout()
-        self.x, self.y = np.mgrid[-1:1:(slm_size[0] * 1j), -1:1:(slm_size[1] *
-                                                                 1j)]
-        self.slm_size = slm_size
-
-        # this is an overlay that can be added to the slm display
-        # it can be used for eg. entanglement concentration
-        self.overlay = None
-        screen_selector = QComboBox()
-        oam_scroll_area = QScrollArea()
-        position_zernike_scroll_area = QScrollArea()
-        slm_zernike_scroll_area = QScrollArea()
-        add_controller_button = QPushButton("Add OAM control")
-
-        self.oam_controller = OAMControlSet()
-        self.plot = FullScreenPlot(slm_size, slm_size)
-        self.position_zernike_controller = ZernikeSet(
-            self.x,
-            self.y, [(2, 2), (0, 2), (-2, 2)],
-            title="Position Zernike Controller")
-        self.slm_zernike_controller = ZernikeSet(
-            self.x,
-            self.y, [(2, 2), (0, 2), (-2, 2)],
-            title="SLM Zernike Controller")
-        self.position_controller = XYController("Position")
-
+        # Lookup table controls
         self.lut_control = None
         self.lut_control_button = QPushButton("Open LUT controls")
-        self.diffraction_grating = XYController("Diffraction grating")
         self.lut_list = [(-np.pi, 0), (np.pi, 255)]
 
-        oam_scroll_area.setWidget(self.oam_controller)
-        oam_scroll_area.setWidgetResizable(True)
+        self.position_zernike_controller = ZernikeSet(
+            self.x,
+            self.y, [(2, 2), (0, 2), (-2, 2)],
+            title="Position Zernike Controller")
+        self.slm_zernike_controller = ZernikeSet(
+            self.x,
+            self.y, [(2, 2), (0, 2), (-2, 2)],
+            title="SLM Zernike Controller")
+
         position_zernike_scroll_area.setWidget(
             self.position_zernike_controller)
         position_zernike_scroll_area.setWidgetResizable(True)
@@ -247,6 +196,8 @@ class PixelEntanglementSLMController(QWidget):
 
         for i, screen in enumerate(screens):
             screen_selector.addItem("Screen {}".format(i))
+
+        self.plot = FullScreenPlot(slm_size, slm_size)
 
         self.slm_window = SLMDisplay(window_title,
                                      screens[screen_selector.currentIndex()],
@@ -257,36 +208,40 @@ class PixelEntanglementSLMController(QWidget):
                                                               currentIndex()]))
 
         self.oam_controller.value_changed.connect(self.update_image)
+        self.pixel_radius.sigValueChanged.connect(self.update_image)
+        self.circle_radius.sigValueChanged.connect(self.update_image)
+        self.dim.sigValueChanged.connect(self.update_image)
+        self.mub_selection.sigValueChanged.connect(self.update_image)
+        self.basis_selection.sigValueChanged.connect(self.update_image)
         self.position_zernike_controller.value_changed.connect(
             self.update_image)
         self.slm_zernike_controller.value_changed.connect(self.update_image)
         self.diffraction_grating.value_changed.connect(self.update_image)
-        self.position_controller.value_changed.connect(self.update_image)
-        self.position_controller.value_changed.connect(
-            self.change_zernike_position)
-        add_controller_button.clicked.connect(
-            self.oam_controller.add_new_oam_pattern)
+        self.position.value_changed.connect(self.update_image)
+        self.position.value_changed.connect(self.change_zernike_position)
         self.lut_control_button.clicked.connect(self.open_lut_control)
 
         layout.addWidget(QLabel("Display on:"), 0, 1)
         layout.addWidget(screen_selector, 0, 2)
-        layout.addWidget(add_controller_button, 0, 0)
         layout.addWidget(self.diffraction_grating, 0, 3)
-        layout.addWidget(oam_scroll_area, 1, 0, 1, 3)
         layout.addWidget(self.plot, 1, 3, 1, 1)
-        layout.addWidget(self.lut_control_button, 3, 0, 1, 1)
-        layout.addWidget(self.position_controller, 3, 1, 1, 3)
-        layout.addWidget(position_zernike_scroll_area, 4, 0, 1, 2)
-        layout.addWidget(slm_zernike_scroll_area, 4, 2, 1, 2)
+        layout.addWidget(QLabel("Pixel radius:"), 2, 0, 1, 1)
+        layout.addWidget(self.pixel_radius, 2, 1, 1, 1)
+        layout.addWidget(QLabel("Circle radius:"), 2, 2, 1, 1)
+        layout.addWidget(self.pixel_radius, 2, 3, 1, 1)
+        layout.addWidget(QLabel("Dimension:"), 3, 1, 1, 1)
+        layout.addWidget(self.dim, 3, 1, 1, 1)
+        layout.addWidget(QLabel("MUB:"), 3, 2, 1, 1)
+        layout.addWidget(self.mub_selection, 3, 3, 1, 1)
+        layout.addWidget(QLabel("Basis:"), 3, 4, 1, 1)
+        layout.addWidget(self.basis_selection, 3, 5, 1, 1)
+        layout.addWidget(self.lut_control_button, 4, 0, 1, 1)
+        layout.addWidget(self.position, 4, 1, 1, 3)
+        layout.addWidget(position_zernike_scroll_area, 5, 0, 1, 2)
+        layout.addWidget(slm_zernike_scroll_area, 5, 2, 1, 2)
 
         self.setLayout(layout)
-
-        self.oam_controller.add_new_oam_pattern()
-
-    def change_zernike_position(self):
-        x, y = self.position_controller.get_values()
-        self.position_zernike_controller.change_position(
-            self.x - x, self.y - y)
+        self.update_image()
 
     def open_lut_control(self):
         '''Open the LUT control if it's not open already
@@ -308,6 +263,11 @@ class PixelEntanglementSLMController(QWidget):
             self.plot.update_LUT(new_lut)
             self.slm_window.window.update_LUT(new_lut)
 
+    def change_zernike_position(self):
+        x, y = self.position.get_values()
+        self.position_zernike_controller.change_position(
+            self.x - x, self.y - y)
+
     def update_image(self):
         '''Update the image displayed on the oam plot and the
         gui plot
@@ -315,20 +275,17 @@ class PixelEntanglementSLMController(QWidget):
         diff_x, diff_y = self.diffraction_grating.get_values()
         position_zernike_image = self.position_zernike_controller.get_pattern()
         slm_zernike_image = self.slm_zernike_controller.get_pattern()
-        x, y = self.position_controller.get_values()
-        oam_image = np.sum([
-            p["amplitude"] *
-            np.exp(1j * ((p["ang_mom"] * np.arctan2(self.y - y, self.x - x)) +
-                         (diff_x * self.x + diff_y * self.y) + p["phase"]))
-            for p in self.oam_controller.get_values()
-        ],
-                           axis=0)
+        x, y = self.position.get_values()
+        pixel_image = complex_field(
+            basis(self.dim.value(), self.mub_selection.value(),
+                  self.basis_selection()), self.x, self.y,
+            self.pixel_radius.value(), self.circle_radius.value(), (x, y))
         if self.overlay is None:
             new_image = np.angle(slm_zernike_image * position_zernike_image *
-                                 oam_image)
+                                 pixel_image)
         else:
             new_image = np.angle(slm_zernike_image * position_zernike_image *
-                                 oam_image * self.overlay)
+                                 pixel_image * self.overlay)
         self.plot.set_and_update_image(new_image)
         self.slm_window.set_image(new_image)
 
@@ -354,16 +311,24 @@ class PixelEntanglementSLMController(QWidget):
         '''Get a dictionary of values for the contained widgets
         '''
         return {
-            "oam_controller":
-            self.oam_controller.get_values(),
             "position_zernike_controller":
             self.position_zernike_controller.get_values(),
+            "pixel_radius":
+            self.pixel_radius.value(),
+            "circle_radius":
+            self.circle_radius.value(),
+            "dim":
+            self.dim.value(),
+            "mub_selection":
+            self.mub_selection.value(),
+            "basis_selection":
+            self.basis_selection.value(),
             "slm_zernike_controller":
             self.slm_zernike_controller.get_values(),
             "diffraction_grating":
             self.diffraction_grating.get_values(),
-            "position_controller":
-            self.position_controller.get_values(),
+            "position":
+            self.position.get_values(),
             "lut_list":
             self.lut_list,
             "overlay":
@@ -373,10 +338,9 @@ class PixelEntanglementSLMController(QWidget):
     def set_values(self, *args, **kwargs):
         '''Set the values of the SLM display from a set of args and kwargs
         Expects values for:
-        oam_controller,
         position_zernike_controller,
         slm_zernike_controller,
-        position_controller,
+        position,
         diffraction_grating,
         overlay,
         lut_list,
