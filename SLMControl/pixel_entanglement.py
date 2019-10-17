@@ -435,11 +435,11 @@ class PixelEntanglementController(QWidget):
 
         layout = QGridLayout()
         if flip:
-            self.x, self.y = np.mgrid[1:-1:(slm_size[0] * 1j), -1:1:(slm_size[1] *
-                                                                    1j)]
+            self.x, self.y = np.mgrid[1:-1:(slm_size[0] *
+                                            1j), -1:1:(slm_size[1] * 1j)]
         else:
-            self.x, self.y = np.mgrid[-1:1:(slm_size[0] * 1j), -1:1:(slm_size[1] *
-                                                                    1j)]
+            self.x, self.y = np.mgrid[-1:1:(slm_size[0] *
+                                            1j), -1:1:(slm_size[1] * 1j)]
         self.slm_size = slm_size
 
         self.overlay = None
@@ -659,7 +659,10 @@ class MultiPixelController(QWidget):
         load_button = QPushButton("Load values")
 
         self.slms = [
-            PizzaEntanglementController("SLM {}".format(i), screens, size)
+            PizzaEntanglementController("SLM {}".format(i),
+                                        screens,
+                                        size,
+                                        flip=bool(i))
             for i, size in enumerate(slm_sizes)
         ]
 
