@@ -374,10 +374,14 @@ class PizzaEntanglementController(QWidget):
         return {
             "position_zernike_controller":
             self.position_zernike_controller.get_values(),
-            "pixel_radius":
-            self.pixel_radius.value(),
-            "circle_radius":
-            self.circle_radius.value(),
+            "circle_inner_radius":
+            self.circle_inner_radius.value(),
+            "circle_outer_radius":
+            self.circle_outer_radius.value(),
+            "slice_spacing":
+            self.slice_spacing.value(),
+            "rotation":
+            self.rotation.value(),
             "dim":
             self.dim.value(),
             "mub_selection":
