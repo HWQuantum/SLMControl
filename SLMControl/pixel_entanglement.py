@@ -2,7 +2,7 @@
 The circle packings come from http://hydra.nat.uni-magdeburg.de/packing/csq/csq.html
 The coordinates give the centres of the circles, and they all have the same radius, given in the radii array.
 
-The circles fit into a square with coordinates (-0.5, -0.5) -> (0.5, 0.5) 
+The circles fit into a square with coordinates (-0.5, -0.5) -> (0.5, 0.5)
 or a circle with radius 1
 '''
 
@@ -655,7 +655,7 @@ class MultiPixelController(QWidget):
         load_button = QPushButton("Load values")
 
         self.slms = [
-            PixelEntanglementController("SLM {}".format(i), screens, size)
+            PizzaEntanglementController("SLM {}".format(i), screens, size)
             for i, size in enumerate(slm_sizes)
         ]
 
@@ -724,7 +724,7 @@ class MultiPixelController(QWidget):
 if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
     app = QApplication([])
-    # w = MultiPixelController(app.screens(), [(512, 512), (512, 512)])
-    w = PizzaEntanglementController("hi", app.screens(), (512, 512))
+    w = MultiPixelController(app.screens(), [(512, 512), (512, 512)])
+    # w = PizzaEntanglementController("hi", app.screens(), (512, 512))
     w.show()
     app.exec()
