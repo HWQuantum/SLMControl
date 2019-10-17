@@ -429,13 +429,17 @@ class PizzaEntanglementController(QWidget):
 class PixelEntanglementController(QWidget):
     '''Controls for pixel entanglement
     '''
-    def __init__(self, window_title, screens, slm_size):
+    def __init__(self, window_title, screens, slm_size, flip=False):
         super().__init__()
         self.screens = screens
 
         layout = QGridLayout()
-        self.x, self.y = np.mgrid[-1:1:(slm_size[0] * 1j), -1:1:(slm_size[1] *
-                                                                 1j)]
+        if flip:
+            self.x, self.y = np.mgrid[1:-1:(slm_size[0] * 1j), -1:1:(slm_size[1] *
+                                                                    1j)]
+        else:
+            self.x, self.y = np.mgrid[-1:1:(slm_size[0] * 1j), -1:1:(slm_size[1] *
+                                                                    1j)]
         self.slm_size = slm_size
 
         self.overlay = None
