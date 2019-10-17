@@ -206,10 +206,10 @@ class PizzaEntanglementController(QWidget):
 
         layout = QGridLayout()
         if flip:
-            self.x, self.y = np.mgrid[1:-1:(slm_size[0] *
+            self.x, self.y = np.mgrid[-1:1:(slm_size[0] *
                                             1j), -1:1:(slm_size[1] * 1j)]
         else:
-            self.x, self.y = np.mgrid[-1:1:(slm_size[0] *
+            self.x, self.y = np.mgrid[1:-1:(slm_size[0] *
                                             1j), -1:1:(slm_size[1] * 1j)]
         self.slm_size = slm_size
 
