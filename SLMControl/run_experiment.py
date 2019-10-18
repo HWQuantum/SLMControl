@@ -8,6 +8,7 @@ from PyQt5.QtCore import pyqtSlot, pyqtSignal
 from slm_display import MultiSLMController
 from coincidence_counting import CoincidenceWidget
 from experiments import coincidences_3x3_with_correction
+from experiments import two_mub_7x7
 from pixel_entanglement import MultiPixelController
 
 
@@ -72,7 +73,7 @@ class PizzaExperimentController(QWidget):
         ''' Runs the experiment, using values set on the device measurement
         page
         '''
-        self.measurement_receiver = coincidences_3x3_with_correction(
+        self.measurement_receiver = two_mub_7x7(
             self.slm_controller, self.coincidence_widget, self.application)
 
         filename, _ = QFileDialog.getSaveFileName(self, "Save file", "")
