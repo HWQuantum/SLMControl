@@ -508,7 +508,7 @@ def two_mub_7x7(slm_widget, coincidence_widget, application):
         for basis_a in range(7):
             slm_widget.slms[0].basis_selection.setValue(basis_a)
             for basis_b in range(7):
-                slm_widget.slms[1].basis_selection.setValue(basis_a)
+                slm_widget.slms[1].basis_selection.setValue(basis_b)
 
                 application.processEvents()
                 sleep(0.3)
@@ -518,7 +518,7 @@ def two_mub_7x7(slm_widget, coincidence_widget, application):
                         integration_time, coincidence_window, histogram_bins,
                         sync_channel)[3][3]
 
-            print("Done a: {}, b: {}".format(basis_a, basis_b))
+                print("Done a: {}, b: {}".format(basis_a, basis_b))
     measurement_receiver.set_key('coincidence_data')
     measurement_receiver.add_data(mub_measurements)
     fig, axs = plt.subplots(1, 2)
@@ -532,7 +532,7 @@ def two_mub_17x17(slm_widget, coincidence_widget, application):
     '''Takes the coincidences for mub 2 and 3 
     With an integration time of 10s
     '''
-    integration_time = 10000  # integration time in ms
+    integration_time = 1000  # integration time in ms
     coincidence_window = 5000  # coincidence window in ps
     histogram_bins = 300  # number of bins for the histogram
     sync_channel = 0  # the channel the values should be compared with
@@ -575,7 +575,7 @@ def two_mub_17x17(slm_widget, coincidence_widget, application):
         for basis_a in range(dim):
             slm_widget.slms[0].basis_selection.setValue(basis_a)
             for basis_b in range(dim):
-                slm_widget.slms[1].basis_selection.setValue(basis_a)
+                slm_widget.slms[1].basis_selection.setValue(basis_b)
 
                 application.processEvents()
                 sleep(0.3)
@@ -585,7 +585,7 @@ def two_mub_17x17(slm_widget, coincidence_widget, application):
                         integration_time, coincidence_window, histogram_bins,
                         sync_channel)[3][3]
 
-            print("Done a: {}, b: {}".format(basis_a, basis_b))
+                print("Done a: {}, b: {}".format(basis_a, basis_b))
     measurement_receiver.set_key('coincidence_data')
     measurement_receiver.add_data(mub_measurements)
     fig, axs = plt.subplots(1, 2)
