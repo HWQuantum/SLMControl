@@ -3,11 +3,13 @@ coincidence counting widgets
 and controls them itself to allow taking a run of measurements
 '''
 
-from PyQt5.QtWidgets import QWidget, QGridLayout, QPushButton, QFileDialog
+from PyQt5.QtWidgets import QWidget, QGridLayout, QPushButton, QFileDialog, QComboBox
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 from slm_display import MultiSLMController
 from coincidence_counting import CoincidenceWidget
-from experiments import coincidences_3x3_with_correction, two_mub_17x17, coincidence_scan
+from experiments import coincidences_3x3_with_correction, two_mub_17x17
+import experiments
+import inspect
 from pixel_entanglement import MultiPixelController
 
 
@@ -51,9 +53,14 @@ class PizzaExperimentController(QWidget):
         super().__init__()
         self.application = application
         self.layout = QGridLayout()
+        self.experiment_selection = QComboBox()
         self.run_experiment_button = QPushButton("Run EXPERIMENT")
         self.slm_controller = MultiPixelController(screens, [(512, 512),
                                                              (512, 512)])
+
+        self.experiments = inspect.getmembers(experiments, inspect.isfunction)
+        for ex in self.experiments:
+            self.experiment_selection.addItem(ex[0])
 
         self.coincidence_widget = CoincidenceWidget()
 
@@ -72,9 +79,9 @@ class PizzaExperimentController(QWidget):
         ''' Runs the experiment, using values set on the device measurement
         page
         '''
-        self.measurement_receiver = coincidence_scan(self.slm_controller,
-                                                     self.coincidence_widget,
-                                                     self.application)
+        function_index = self.experiment_selection.currentIndex()
+        self.measurement_receiver = self.experiments[function_index][1](
+            self.slm_controller, self.coincidence_widget, self.application)
 
         filename, _ = QFileDialog.getSaveFileName(self, "Save file", "")
         if filename:
