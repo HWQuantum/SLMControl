@@ -627,8 +627,8 @@ def coincidence_scan(slm_widget, coincidence_widget, application):
 
     slm_widget.slms[0].mub_selection.setValue(1)
     slm_widget.slms[1].mub_selection.setValue(1)
-    slm_widget.slms[0].basis_selection.setValue(0)
-    slm_widget.slms[1].basis_selection.setValue(1)
+    slm_widget.slms[0].basis_selection.setValue(1)
+    slm_widget.slms[1].basis_selection.setValue(0)
 
     mub_measurements = np.zeros(measurement_res)
 
@@ -651,5 +651,69 @@ def coincidence_scan(slm_widget, coincidence_widget, application):
     measurement_receiver.add_data((xs, ys))
     fig, axs = plt.subplots(1, 1)
     axs.imshow(mub_measurements)
+    plt.show()
+    return measurement_receiver
+
+
+def slice_spacing_scan(slm_widget, coincidence_widget, application):
+    '''Scan over the slice spacing in the computational mub to see what effect
+    this has
+    '''
+    integration_time = 2000  # integration time in ms
+    coincidence_window = 3000  # coincidence window in ps
+    histogram_bins = 300  # number of bins for the histogram
+    sync_channel = 0  # the channel the values should be compared with
+    dims = [7, 8, 9]  # dimensions in which to do it
+    slice_spacing = np.linspace(0, np.pi * 0.9, 8)
+
+    measurement_receiver = MeasurementReceiver()
+
+    measurement_receiver.set_key('coincidence_counter_values')
+    measurement_receiver.add_data(coincidence_widget.device_setup.get_values())
+    measurement_receiver.set_key('measurement_parameters')
+    measurement_receiver.add_data({
+        "integration_time": integration_time,
+        "coincidence_window": coincidence_window,
+        "histogram_bins": histogram_bins,
+        "sync_channel": sync_channel,
+        "dims": dims,
+        "spacings": slice_spacing,
+    })
+
+    slm_widget.slms[0].circle_outer_radius.setValue(100)
+    slm_widget.slms[1].circle_outer_radius.setValue(100)
+
+    slm_widget.slms[0].mub_selection.setValue(0)
+    slm_widget.slms[1].mub_selection.setValue(0)
+
+    mub_measurements = [np.zeros((len(slice_spacing), d, d)) for d in dims]
+
+    for i, d in enumerate(dims):
+        slm_widget.slms[0].dim.setValue(d)
+        slm_widget.slms[1].dim.setValue(d)
+        for j, spacing in enumerate(slice_spacing):
+            slm_widget.slms[0].slice_spacing.setValue(spacing / d)
+            slm_widget.slms[1].slice_spacing.setValue(spacing / d)
+            for basis_a in range(d):
+                slm_widget.slms[0].basis_selection.setValue(basis_a)
+                for basis_b in range(d):
+                    slm_widget.slms[0].basis_selection.setValue(basis_b)
+
+                    application.processEvents()
+                    sleep(0.3)
+                    mub_measurements[i][
+                        j, basis_a,
+                        basis_b] = coincidence_widget.measurement_thread.run_measurement_once(
+                            integration_time, coincidence_window,
+                            histogram_bins, sync_channel)[3][3]
+
+                    print("Dim: {}, spacing: {}, a: {}, b: {}".format(
+                        d, spacing, basis_a, basis_b))
+    measurement_receiver.set_key('coincidence_data')
+    measurement_receiver.add_data(mub_measurements)
+    fig, axs = plt.subplots(len(dims), len(slice_spacing))
+    for i, ax in enumerate(axs):
+        for j, a in enumerate(ax):
+            a.imshow(mub_measurements[i][j, :, :])
     plt.show()
     return measurement_receiver
