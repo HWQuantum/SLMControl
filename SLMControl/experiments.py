@@ -717,3 +717,65 @@ def slice_spacing_scan(slm_widget, coincidence_widget, application):
             a.imshow(mub_measurements[i][j, :, :])
     plt.show()
     return measurement_receiver
+
+
+def scan_over_positions(slm_widget, coincidence_widget, application):
+    '''Scan over multiple positions and take the standard deviation of the diagonal to measure the flatness of the state
+    '''
+    integration_time = 4000  # integration time in ms
+    coincidence_window = 3000  # coincidence window in ps
+    histogram_bins = 300  # number of bins for the histogram
+    sync_channel = 0  # the channel the values should be compared with
+    dim = 7  # dimensions in which to do it
+    position_res = (10, 10)
+
+    measurement_receiver = MeasurementReceiver()
+
+    measurement_receiver.set_key('coincidence_counter_values')
+    measurement_receiver.add_data(coincidence_widget.device_setup.get_values())
+    measurement_receiver.set_key('measurement_parameters')
+    measurement_receiver.add_data({
+        "integration_time": integration_time,
+        "coincidence_window": coincidence_window,
+        "histogram_bins": histogram_bins,
+        "sync_channel": sync_channel,
+        "dim": dim,
+    })
+
+    slm_widget.slms[0].circle_outer_radius.setValue(100)
+    slm_widget.slms[1].circle_outer_radius.setValue(100)
+
+    slm_widget.slms[0].mub_selection.setValue(0)
+    slm_widget.slms[1].mub_selection.setValue(0)
+
+    slm_widget.slms[0].dim.setValue(dim)
+    slm_widget.slms[1].dim.setValue(dim)
+
+    xs = np.linspace(0, 5, 10)
+    ys = np.linspace(0, 5, 10)
+
+    stdev_measurements = np.zeros(position_res)
+
+    for i, x in enumerate(xs):
+        for j, y in enumerate(ys):
+            diag_vec = np.zeros((dim, 1))
+            for basis in range(dim):
+                slm_widget.slms[0].basis_selection.setValue(basis)
+                slm_widget.slms[1].basis_selection.setValue(basis)
+                application.processEvents()
+                sleep(0.3)
+
+                diag_vec[
+                    basis] = coincidence_widget.measurement_thread.run_measurement_once(
+                        integration_time, coincidence_window, histogram_bins,
+                        sync_channel)[3][3]
+            stdev_measurements[i, j] = np.std(diag_vec) / np.mean(diag_vec)
+
+    measurement_receiver.set_key('coincidence_data')
+    measurement_receiver.add_data(stdev_measurements)
+    measurement_receiver.set_key('x, y ranges')
+    measurement_receiver.add_data((xs, ys))
+    fig, axs = plt.subplots(1, 1)
+    axs.imshow(stdev_measurements)
+    plt.show()
+    return measurement_receiver
