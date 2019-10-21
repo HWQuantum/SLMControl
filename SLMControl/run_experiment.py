@@ -68,7 +68,8 @@ class PizzaExperimentController(QWidget):
 
         self.layout.addWidget(self.slm_controller, 0, 0)
         self.layout.addWidget(self.coincidence_widget, 0, 1)
-        self.layout.addWidget(self.run_experiment_button, 1, 0, 1, 2)
+        self.layout.addWidget(self.experiment_selection, 1, 0, 1, 1)
+        self.layout.addWidget(self.run_experiment_button, 1, 1, 1, 1)
         self.setLayout(self.layout)
 
     def closeEvent(self, e):
