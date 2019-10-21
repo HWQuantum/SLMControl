@@ -697,7 +697,7 @@ def slice_spacing_scan(slm_widget, coincidence_widget, application):
             for basis_a in range(d):
                 slm_widget.slms[0].basis_selection.setValue(basis_a)
                 for basis_b in range(d):
-                    slm_widget.slms[0].basis_selection.setValue(basis_b)
+                    slm_widget.slms[1].basis_selection.setValue(basis_b)
 
                     application.processEvents()
                     sleep(0.3)
