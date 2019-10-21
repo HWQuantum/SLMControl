@@ -593,3 +593,63 @@ def two_mub_17x17(slm_widget, coincidence_widget, application):
     axs[1].imshow(mub_measurements[1, :, :])
     plt.show()
     return measurement_receiver
+
+
+def coincidence_scan(slm_widget, coincidence_widget, application):
+    '''Scans the first slm in x and y against the second with the first in vector <1, 0| and the second in vector <1, 1|
+    With an integration time of 1s
+    '''
+    integration_time = 1000  # integration time in ms
+    coincidence_window = 3000  # coincidence window in ps
+    histogram_bins = 300  # number of bins for the histogram
+    sync_channel = 0  # the channel the values should be compared with
+    dim = 7
+
+    measurement_res = (10, 10)  # the resolution to take values over
+
+    measurement_receiver = MeasurementReceiver()
+
+    measurement_receiver.set_key('coincidence_counter_values')
+    measurement_receiver.add_data(coincidence_widget.device_setup.get_values())
+    measurement_receiver.set_key('measurement_parameters')
+    measurement_receiver.add_data({
+        "integration_time": integration_time,
+        "coincidence_window": coincidence_window,
+        "histogram_bins": histogram_bins,
+        "sync_channel": sync_channel,
+    })
+
+    slm_widget.slms[0].dim.setValue(dim)
+    slm_widget.slms[1].dim.setValue(dim)
+
+    xs = np.linspace(-1, 1, measurement_res[0])
+    ys = np.linspace(-1, 1, measurement_res[1])
+
+    slm_widget.slms[0].mub_selection.setValue(1)
+    slm_widget.slms[1].mub_selection.setValue(1)
+    slm_widget.slms[0].basis_selection.setValue(0)
+    slm_widget.slms[1].basis_selection.setValue(1)
+
+    mub_measurements = np.zeros(measurement_res)
+
+    for i, x in enumerate(xs):
+        for j, y in enumerate(ys):
+            slm_widget.slms[0].position.set_values((x, y))
+
+            application.processEvents()
+            sleep(0.3)
+            mub_measurements[
+                i,
+                j] = coincidence_widget.measurement_thread.run_measurement_once(
+                    integration_time, coincidence_window, histogram_bins,
+                    sync_channel)[3][3]
+
+            print("Done x: {}, y: {}".format(x, y))
+    measurement_receiver.set_key('coincidence_data')
+    measurement_receiver.add_data(mub_measurements)
+    measurement_receiver.set_key('positions')
+    measurement_receiver.add_data((xs, ys))
+    fig, axs = plt.subplots(1, 1)
+    axs.imshow(mub_measurements)
+    plt.show()
+    return measurement_receiver
