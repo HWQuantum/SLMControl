@@ -8,6 +8,7 @@ from PyQt5.QtCore import pyqtSlot, pyqtSignal
 from slm_display import MultiSLMController
 from coincidence_counting import CoincidenceWidget
 from experiments import coincidences_3x3_with_correction, two_mub_17x17
+import os
 import experiments
 import inspect
 from pixel_entanglement import MultiPixelController
@@ -71,6 +72,12 @@ class PizzaExperimentController(QWidget):
         self.layout.addWidget(self.experiment_selection, 1, 0, 1, 1)
         self.layout.addWidget(self.run_experiment_button, 1, 1, 1, 1)
         self.setLayout(self.layout)
+
+    def try_load_default(self, defaults_filename='.defaults.slmc'):
+        '''Function to try to load defaults from a given file
+        '''
+        if os.path.exists(defaults_filename):
+            pass
 
     def closeEvent(self, e):
         self.slm_controller.close()
