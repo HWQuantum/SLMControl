@@ -9,6 +9,7 @@ from slm_display import MultiSLMController
 from coincidence_counting import CoincidenceWidget
 from experiments import coincidences_3x3_with_correction, two_mub_17x17
 import os
+import json
 import experiments
 import inspect
 from pixel_entanglement import MultiPixelController
@@ -56,6 +57,8 @@ class PizzaExperimentController(QWidget):
         self.layout = QGridLayout()
         self.experiment_selection = QComboBox()
         self.run_experiment_button = QPushButton("Run EXPERIMENT")
+        self.save_defaults_button = QPushButton("Save defaults")
+        self.load_defaults_button = QPushButton("Load defaults")
         self.slm_controller = MultiPixelController(screens, [(512, 512),
                                                              (512, 512)])
 
@@ -66,21 +69,74 @@ class PizzaExperimentController(QWidget):
         self.coincidence_widget = CoincidenceWidget()
 
         self.run_experiment_button.clicked.connect(self.run_experiment)
+        self.load_defaults_button.clicked.connect(self.try_load_defaults)
+        self.save_defaults_button.clicked.connect(self.try_save_defaults)
 
         self.layout.addWidget(self.slm_controller, 0, 0)
         self.layout.addWidget(self.coincidence_widget, 0, 1)
         self.layout.addWidget(self.experiment_selection, 1, 0, 1, 1)
         self.layout.addWidget(self.run_experiment_button, 1, 1, 1, 1)
+        self.layout.addWidget(self.save_defaults_button, 2, 0, 1, 1)
+        self.layout.addWidget(self.load_defaults_button, 2, 1, 1, 1)
         self.setLayout(self.layout)
 
-    def try_load_default(self, defaults_filename='.defaults.slmc'):
+        self.try_load_defaults()
+
+    def try_load_defaults(self, defaults_filename='.defaults.slmc'):
         '''Function to try to load defaults from a given file
         '''
         if os.path.exists(defaults_filename):
+            try:
+                self.read_values_from_json_file(defaults_filename)
+            except:
+                pass
+
+    def try_save_defaults(self, defaults_filename='.defaults.slmc'):
+        '''Try to save the defaults
+        '''
+        try:
+            self.save_values_to_json_file(defaults_filename)
+        except:
             pass
 
     def closeEvent(self, e):
         self.slm_controller.close()
+
+    def get_values(self):
+        '''Get the values contained in the slm controller and the HH setup controller
+        '''
+        return {
+            'coincidence_widget': self.coincidence_widget.get_values(),
+            'slm_controller': self.slm_controller.get_values()
+        }
+
+    def set_values(self, values):
+        self.coincidence_widget.set_values(values['coincidence_widget'])
+        self.slm_controller.set_values(values['slm_controller'])
+
+    def save_values_to_json_file(self, filename):
+        '''Save the values to a given filename
+        doesn't catch any errors
+        '''
+        values = self.get_values()
+        with open(filename, 'w') as f:
+            json.dump(values, f)
+
+    def read_values_from_json_file(self, filename):
+        '''Read the values from a given filename
+        doesn't catch any errors
+        '''
+        with open(filename, 'r') as f:
+            self.set_values(json.load(f))
+
+    def try_read_values_from_json_file(self, filename):
+        '''wraps reading values in a try except thing,
+        so it doesn't fail when reading a naughty file
+        '''
+        try:
+            self.read_values_from_json_file(filename)
+        except:
+            pass
 
     @pyqtSlot()
     def run_experiment(self):

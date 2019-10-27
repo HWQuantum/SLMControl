@@ -574,6 +574,17 @@ class CoincidenceWidget(QWidget):
         '''
         self.device_measurement.reset_measurement_button()
 
+    def get_values(self):
+        '''Get the important values
+        The only important values for this are the device_setup values
+        '''
+        return self.device_setup.get_values()
+
+    def set_values(self, values):
+        '''Set the values of the device setup controller from the given values
+        '''
+        self.device_setup.set_values(values)
+
 
 def initialise_device(values):
     '''Initialise the first hydraharp device that is found
