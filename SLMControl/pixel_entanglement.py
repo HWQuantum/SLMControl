@@ -104,19 +104,25 @@ def pizza_field(components,
                 circle_inner_radius=0,
                 circle_outer_radius=1,
                 circle_position=(0, 0),
-                slice_angle_spacing=0,
-                rotation=0):
+                slice_fraction=1,
+                rotation=0,
+                circle_fraction=1):
     '''Take the components of a vector, the X and Y matrices (from meshgrid)
     and return the pizza representing the state.
-    slice_angle_spacing gives the separation between slices in radians
+    slice_fraction gives the fraction of the slice space that's actually filled 
+    The rotational_span gives the 'circularity' of the pizza. At 2π it returns a circle.
+    For π it gives half a circle, etc...
 
     returns the complex field over X and Y which represents this vector
     '''
     n_slices = len(components)
-    lower_angle = np.linspace(0, 2 * np.pi - (2 / n_slices * np.pi),
-                              n_slices) + slice_angle_spacing
-    upper_angle = np.linspace(2 / n_slices * np.pi, 2 * np.pi,
-                              n_slices) - slice_angle_spacing
+    rotational_span = 2 * np.pi * circle_fraction
+    slice_spacing_rads = rotational_span / n_slices * (1 - slice_fraction) / 2
+    lower_angle = np.linspace(0, rotational_span -
+                              (rotational_span / n_slices),
+                              n_slices) + slice_spacing_rads
+    upper_angle = np.linspace(rotational_span / n_slices, rotational_span,
+                              n_slices) - slice_spacing_rads
     field = np.zeros(X.shape, dtype=np.complex128)
     if n_slices > 1:
         for i, p in enumerate(components):
@@ -224,7 +230,8 @@ class PizzaEntanglementController(QWidget):
         self.diffraction_grating = XYController("Diffraction Grating")
         self.circle_inner_radius = pg.SpinBox(value=0)
         self.circle_outer_radius = pg.SpinBox(value=1)
-        self.slice_spacing = pg.SpinBox()
+        self.slice_fraction = pg.SpinBox(value=1)
+        self.circle_fraction = pg.SpinBox(value=1)
         self.rotation = pg.SpinBox()
         self.dim = pg.SpinBox(value=2, int=True, step=1, bounds=(2, None))
         self.mub_selection = pg.SpinBox(value=0, int=True, step=1)
@@ -266,7 +273,8 @@ class PizzaEntanglementController(QWidget):
         self.circle_inner_radius.sigValueChanged.connect(self.update_image)
         self.circle_outer_radius.sigValueChanged.connect(self.update_image)
         self.rotation.sigValueChanged.connect(self.update_image)
-        self.slice_spacing.sigValueChanged.connect(self.update_image)
+        self.slice_fraction.sigValueChanged.connect(self.update_image)
+        self.circle_fraction.sigValueChanged.connect(self.update_image)
         self.dim.sigValueChanged.connect(self.update_image)
         self.mub_selection.sigValueChanged.connect(self.update_image)
         self.basis_selection.sigValueChanged.connect(self.update_image)
@@ -281,25 +289,27 @@ class PizzaEntanglementController(QWidget):
         layout.addWidget(QLabel("Display on:"), 0, 1)
         layout.addWidget(screen_selector, 0, 2)
         layout.addWidget(self.diffraction_grating, 0, 3)
-        layout.addWidget(self.plot, 1, 3, 10, 1)
+        layout.addWidget(self.plot, 1, 3, 11, 1)
         layout.addWidget(QLabel("Circle inner radius:"), 1, 0, 1, 1)
         layout.addWidget(self.circle_inner_radius, 1, 1, 1, 1)
         layout.addWidget(QLabel("Circle outer radius:"), 2, 0, 1, 1)
         layout.addWidget(self.circle_outer_radius, 2, 1, 1, 1)
-        layout.addWidget(QLabel("Slice spacing:"), 3, 0)
-        layout.addWidget(self.slice_spacing, 3, 1)
-        layout.addWidget(QLabel("Rotation:"), 4, 0)
-        layout.addWidget(self.rotation, 4, 1)
-        layout.addWidget(QLabel("Dimension:"), 5, 0, 1, 1)
-        layout.addWidget(self.dim, 5, 1, 1, 1)
-        layout.addWidget(QLabel("MUB:"), 6, 0, 1, 1)
-        layout.addWidget(self.mub_selection, 6, 1, 1, 1)
-        layout.addWidget(QLabel("Basis:"), 7, 0, 1, 1)
-        layout.addWidget(self.basis_selection, 7, 1, 1, 1)
-        layout.addWidget(self.lut_control_button, 8, 0, 1, 1)
-        layout.addWidget(self.position, 8, 1, 1, 1)
-        layout.addWidget(position_zernike_scroll_area, 9, 0, 1, 2)
-        layout.addWidget(slm_zernike_scroll_area, 10, 0, 1, 2)
+        layout.addWidget(QLabel("Slice fraction:"), 3, 0)
+        layout.addWidget(self.slice_fraction, 3, 1)
+        layout.addWidget(QLabel("Circle fraction:"), 4, 0)
+        layout.addWidget(self.circle_fraction, 4, 1)
+        layout.addWidget(QLabel("Rotation:"), 5, 0)
+        layout.addWidget(self.rotation, 5, 1)
+        layout.addWidget(QLabel("Dimension:"), 6, 0, 1, 1)
+        layout.addWidget(self.dim, 6, 1, 1, 1)
+        layout.addWidget(QLabel("MUB:"), 7, 0, 1, 1)
+        layout.addWidget(self.mub_selection, 7, 1, 1, 1)
+        layout.addWidget(QLabel("Basis:"), 8, 0, 1, 1)
+        layout.addWidget(self.basis_selection, 8, 1, 1, 1)
+        layout.addWidget(self.lut_control_button, 9, 0, 1, 1)
+        layout.addWidget(self.position, 9, 1, 1, 1)
+        layout.addWidget(position_zernike_scroll_area, 10, 0, 1, 2)
+        layout.addWidget(slm_zernike_scroll_area, 11, 0, 1, 2)
 
         self.setLayout(layout)
         self.update_image()
@@ -339,10 +349,15 @@ class PizzaEntanglementController(QWidget):
         x, y = self.position.get_values()
         pixel_image = pizza_field(
             basis(self.dim.value(), self.mub_selection.value(),
-                  self.basis_selection.value()), self.x, self.y,
-            self.circle_inner_radius.value(), self.circle_outer_radius.value(),
-            (x, y), self.slice_spacing.value(),
-            self.rotation.value()) * np.exp(
+                  self.basis_selection.value()),
+            self.x,
+            self.y,
+            circle_inner_radius=self.circle_inner_radius.value(),
+            circle_outer_radius=self.circle_outer_radius.value(),
+            circle_position=(x, y),
+            slice_fraction=self.slice_fraction.value(),
+            rotation=self.rotation.value(),
+            circle_fraction=self.circle_fraction.value()) * np.exp(
                 1j * (diff_x * self.x + diff_y * self.y))
         if self.overlay is None:
             new_image = np.angle(slm_zernike_image * position_zernike_image *
@@ -382,8 +397,10 @@ class PizzaEntanglementController(QWidget):
             self.circle_inner_radius.value(),
             "circle_outer_radius":
             self.circle_outer_radius.value(),
-            "slice_spacing":
-            self.slice_spacing.value(),
+            "slice_fraction":
+            self.slice_fraction.value(),
+            "circle_fraction":
+            self.circle_fraction.value(),
             "rotation":
             self.rotation.value(),
             "dim":
@@ -739,7 +756,17 @@ class MultiPixelController(QWidget):
 if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
     app = QApplication([])
-    w = MultiPixelController(app.screens(), [(512, 512), (512, 512)])
-    # w = PizzaEntanglementController("hi", app.screens(), (512, 512))
+    # w = MultiPixelController(app.screens(), [(512, 512), (512, 512)])
+    w = PizzaEntanglementController("hi", app.screens(), (512, 512))
     w.show()
     app.exec()
+    # x, y = np.mgrid[-1:1:512j, -1:1:512j]
+    # plt.imshow(np.real(pizza_field(
+    #     [1, 1, 1, 1, 1],
+    #     x,
+    #     y,
+    #     slice_fraction=0.8,
+    #     circle_inner_radius=0.2,
+    #     rotational_span = np.pi
+    # )))
+    # plt.show()
