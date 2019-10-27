@@ -147,6 +147,9 @@ class PizzaExperimentController(QWidget):
         self.measurement_receiver = self.experiments[function_index][1](
             self.slm_controller, self.coincidence_widget, self.application)
 
+        with open('.last_experiment_run_data', 'wb') as f:
+            self.measurement_receiver.save_data(f)
+
         filename, _ = QFileDialog.getSaveFileName(self, "Save file", "")
         if filename:
             with open(filename, 'wb') as f:
