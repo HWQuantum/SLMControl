@@ -39,3 +39,27 @@ Just run SLMControl/slm_display.py, and it'll appear.
      this is caused by the rust function not release the GIL
      maybe pyobject3 has some way to release the GIL in this function?
    - [ ] Change all the set value functions from .set_values() to .setValue() to mirror the pyqtgraph widget function
+
+     
+** Redesigning the pattern control interface
+Each pattern has in common that it's generated over a given x-y grid (using the meshgrid function). 
+The first arguments for each pattern are:
+'''pattern(X, Y, components, ...)'''
+Where components is a vector of complex numbers which define the state the pattern refers to.
+The ellipsis is the set of arguments which apply to a specific pattern. For example, using a pizza basis - the arguments would be, slice spacing, rotations, etc...
+The basis of the components vector is the computational basis for that specific pattern.
+There is a function which calculates the components in the computational basis for a basis vector of the MUBs (in prime dimensions) of that pattern.
+
+The patterns all have in common:
+- A central position
+- A diffraction grating
+- A dimension
+- A components control interface
+- Two sets of zernike polynomials - one over the central position of the pattern, and one over the slm screen
+
+*** Components control interface
+This interface allows control over what components are displayed on the slm. 
+This is a tabbed menu of either:
+- the individual complex numbers (arg and angle)
+- The mub and basis selection
+These are both defined by the current basis selected
