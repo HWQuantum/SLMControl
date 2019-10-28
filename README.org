@@ -62,4 +62,8 @@ This interface allows control over what components are displayed on the slm.
 This is a tabbed menu of either:
 - the individual complex numbers (arg and angle)
 - The mub and basis selection
-These are both defined by the current basis selected
+These are both defined by the current dimension selected
+
+*** SLM Pattern selection
+The individual arguments after X, Y, components are different for each different pattern which is selected.
+These are selected between using a drop-down menu, which changes the different selections.
