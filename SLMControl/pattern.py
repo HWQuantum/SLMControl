@@ -1,6 +1,6 @@
 import numpy as np
 from numba import njit
-from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QComboBox, QGroupBox, QScrollArea, QVBoxLayout
+from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QComboBox, QGroupBox, QScrollArea, QVBoxLayout, QFormLayout
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 import pyqtgraph as pg
 
@@ -236,28 +236,61 @@ class Vector(QWidget):
     """A QWidget controller which allows control over the components of a vector
     The components are in polar form: r, θ; v_j = r_j*exp(iθ_j)
     """
-    def __init__(self, dim):
+
+    value_changed = pyqtSignal()
+
+    def __init__(self, dim=0):
         super().__init__()
-        self.layout = QVBoxLayout()
+        self.layout = QFormLayout()
+        self.components = []
 
-        self.components = [
-            XYController("C_{}".format(i), "R:", "θ") for i in range(dim)
-        ]
-
-        for comp in self.components:
-            self.layout.addWidget(comp)
-
-        button = QPushButton("This is a button")
-
-        self.layout.addWidget(button)
-        button.clicked.connect(self.remove_last_widget)
+        for _ in range(dim):
+            self.add_component(0)
 
         self.setLayout(self.layout)
 
-    def remove_last_widget(self):
-        removed = self.components.pop()
-        self.layout.removeWidget(removed)
-        removed.destroy()
+    def remove_end_component(self):
+        """Remove the widget at the end of the components list
+        """
+        if len(self.components) > 0:
+            self.layout.removeRow(self.components.pop())
+
+    def add_component(self, c=0):
+        """Add a component to the end of the components list
+        Optionally, you can pass in a complex number to set it to
+        """
+        new_component = XYController("v_{}".format(len(self.components) + 1),
+                                     "R:", "θ:")
+        new_component.x.setValue(np.abs(c))
+        new_component.y.setValue(np.angle(c))
+        self.layout.addRow(new_component)
+        self.components.append(new_component)
+
+    def set_to_vector(self, v):
+        """Set the controllers to the given vector, adding and removing 
+        controllers as needed
+        v is a vector of complex numbers
+        """
+        dim = len(v)
+
+        if dim <= len(self.components):
+            for _ in range(len(self.components) - dim):
+                self.remove_end_component()
+
+            for i, component in enumerate(self.components):
+                component.x.setValue(np.abs(v[i]))
+                component.y.setValue(np.angle(v[i]))
+        else:
+            for i, c in enumerate(v[:len(self.components)]):
+                self.components[i].x.setValue(np.abs(c))
+                self.components[i].y.setValue(np.angle(c))
+            for c in v[len(self.components):]:
+                self.add_component(c)
+
+    def set_to_random_vector(self):
+        dim = np.random.randint(1, 10)
+        comps = np.random.rand(dim)
+        self.set_to_vector(comps)
 
 
 class PatternContainer(QWidget):
@@ -312,6 +345,6 @@ if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
     import sys
     app = QApplication(sys.argv)
-    w = Vector(3)
+    w = Vector(100)
     w.show()
     app.exec()
