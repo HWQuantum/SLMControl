@@ -4,6 +4,8 @@ from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QComboBox
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 import pyqtgraph as pg
 
+from zernike_controls import ZernikeSet
+
 
 @njit()
 def point_in_slice(x, y, r, R, theta_1, theta_2):
@@ -364,8 +366,14 @@ class PatternContainer(QWidget):
         self.patterns = [PizzaPattern(), OAMPattern()]
         self.pattern_selector = QComboBox()
         self.vector_selector = QComboBox()
-        self.widget_control_scroll_area = QScrollArea()
+        self.pattern_control_scroll_area = QScrollArea()
         self.vector_control_scroll_area = QScrollArea()
+        self.slm_zernike_scroll_area = QScrollArea()
+        self.position_zernike_scroll_area = QScrollArea()
+        self.slm_zernike = ZernikeSet(self.x, self.y, [(-2, 2), (0, 2),
+                                                       (2, 2)])
+        self.position_zernike = ZernikeSet(self.x, self.y, [(-2, 2), (0, 2),
+                                                            (2, 2)])
         self.position = XYController("Position")
         self.grating = XYController("Diffraction Grating")
         self.dimension = pg.SpinBox(int=True,
@@ -378,27 +386,35 @@ class PatternContainer(QWidget):
 
         # Add settings and setup n that
 
-        self.widget_control_scroll_area.setWidgetResizable(True)
+        self.pattern_control_scroll_area.setWidgetResizable(True)
         self.vector_control_scroll_area.setWidgetResizable(True)
+        self.slm_zernike_scroll_area.setWidgetResizable(True)
+        self.position_zernike_scroll_area.setWidgetResizable(True)
 
         self.pattern_selector.addItems([p.name for p in self.patterns])
-        self.widget_control_scroll_area.setWidget(
+        self.pattern_control_scroll_area.setWidget(
             self.patterns[self.pattern_selector.currentIndex()])
         self.vector_selector.addItems(["MUB controls", "vector controls"])
 
         # Connect up signals
 
         self.pattern_selector.currentIndexChanged.connect(
-            self.change_scroll_widget)
+            self.change_pattern_widget)
         self.vector_selector.currentIndexChanged.connect(
             self.change_vector_widget)
         self.dimension.sigValueChanged.connect(self.set_dimension)
         self.rotation.sigValueChanged.connect(self.change_rotation)
+        self.position.value_changed.connect(self.change_position)
+        for pattern in self.patterns:
+            pattern.value_changed.connect(self.value_changed.emit)
+
+        self.slm_zernike.value_changed.connect(self.value_changed.emit)
+        self.position_zernike.value_changed.connect(self.value_changed.emit)
 
         # Add widgets to layout
 
         self.layout.addWidget(self.pattern_selector)
-        self.layout.addWidget(self.widget_control_scroll_area)
+        self.layout.addWidget(self.pattern_control_scroll_area)
         self.layout.addWidget(self.position)
         self.layout.addWidget(self.grating)
         self.layout.addWidget(self.vector_selector)
@@ -412,12 +428,14 @@ class PatternContainer(QWidget):
         self.previous_pos = self.position.get_values()
 
     @pyqtSlot(int)
-    def change_scroll_widget(self, index):
-        """Change the scroll widget in self.widget_control_scroll_area
+    def change_pattern_widget(self, index):
+        """Change the scroll widget in self.pattern_control_scroll_area
         to the given index
         """
-        self.widget_control_scroll_area.takeWidget()
-        self.widget_control_scroll_area.setWidget(self.patterns[index])
+        self.pattern_control_scroll_area.takeWidget()
+        self.pattern_control_scroll_area.setWidget(self.patterns[index])
+
+        self.value_changed.emit()
 
     @pyqtSlot(int)
     def change_vector_widget(self, index):
@@ -434,13 +452,15 @@ class PatternContainer(QWidget):
                 basis(self.dimension.value(),
                       *self.vector_mub_control.get_basis()))
 
+        self.value_changed.emit()
+
     def set_pattern_by_name(self, name: str):
         """Set the current pattern by the name defined in the pattern class
         The name is pattern.name
         """
         for index, pattern in enumerate(self.patterns):
             if pattern.name == name:
-                self.change_scroll_widget(index)
+                self.change_pattern_widget(index)
                 break
 
     def set_dimension(self):
@@ -483,7 +503,7 @@ if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
     import sys
     app = QApplication(sys.argv)
-    x, y = np.mgrid[-1:1:100j, -1:1:100j]
+    x, y = np.mgrid[-1:1:1000j, -1:1:1000j]
     w = PatternContainer(x, y)
     w.show()
     app.exec()
