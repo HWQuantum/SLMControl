@@ -1,7 +1,7 @@
 import numpy as np
 from numba import njit
-from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QComboBox, QGroupBox, QScrollArea
+from PyQt5.QtCore import pyqtSignal, pyqtSlot
 import pyqtgraph as pg
 
 
@@ -163,34 +163,103 @@ class OAMPattern(QWidget):
         return OAMPattern.oam_pattern(X, Y, components)
 
 
-def PatternContainer(QWidget):
+class XYController(QGroupBox):
+    '''Define a control for x and y position
+    '''
+    value_changed = pyqtSignal()
+
+    def __init__(self, name):
+        super().__init__()
+        self.setTitle(name)
+        self.layout = QGridLayout()
+        self.x = pg.SpinBox()
+        self.y = pg.SpinBox()
+        self.x.sigValueChanged.connect(self.value_changed.emit)
+        self.y.sigValueChanged.connect(self.value_changed.emit)
+        self.layout.addWidget(QLabel("x:"), 0, 0)
+        self.layout.addWidget(QLabel("y:"), 0, 5)
+        self.layout.addWidget(self.x, 0, 1, 1, 4)
+        self.layout.addWidget(self.y, 0, 6, 1, 4)
+        self.setLayout(self.layout)
+
+    def get_values(self):
+        '''Get the x and y values and return in a tuple
+        '''
+        return (self.x.value(), self.y.value())
+
+    def set_values(self, *args, **kwargs):
+        '''Set the values from some dictionaries
+        '''
+        for arg in args:
+            if type(arg) == dict:
+                for key, value in arg.items():
+                    if key == 'x':
+                        self.x.setValue(value)
+                    elif key == 'y':
+                        self.y.setValue(value)
+            elif type(arg) == tuple or type(arg) == list:
+                self.x.setValue(arg[0])
+                self.y.setValue(arg[1])
+
+        for key, value in kwargs.items():
+            if key == 'x':
+                self.x.setValue(value)
+            elif key == 'y':
+                self.y.setValue(value)
+
+
+class PatternContainer(QWidget):
     """Container for all the different types of patterns
     """
     def __init__(self):
         super().__init__()
         self.layout = QGridLayout()
 
-        patterns = [PizzaPattern, OAMPattern]
+        self.patterns = [PizzaPattern(), OAMPattern()]
+        self.pattern_selector = QComboBox()
+        self.widget_control_scroll_area = QScrollArea()
+
+        self.widget_control_scroll_area.setWidgetResizable(True)
+
+        self.pattern_selector.addItems([p.name for p in self.patterns])
+        self.widget_control_scroll_area.setWidget(
+            self.patterns[self.pattern_selector.currentIndex()])
+        self.previous_index = self.pattern_selector.currentIndex()
+
+        self.pattern_selector.currentIndexChanged.connect(
+            self.change_scroll_widget)
+
+        self.layout.addWidget(self.pattern_selector)
+        self.layout.addWidget(self.widget_control_scroll_area)
 
         self.setLayout(self.layout)
 
+    @pyqtSlot(int)
+    def change_scroll_widget(self, index):
+        """Change the scroll widget in self.widget_control_scroll_area
+        to the given index
+        """
+        if index != self.previous_index:
+            self.patterns[
+                self.
+                previous_index] = self.widget_control_scroll_area.takeWidget()
+            self.widget_control_scroll_area.setWidget(self.patterns[index])
+            self.previous_index = index
 
-def draw_plot():
-    import matplotlib.pyplot as plt
-    fig, ax = plt.subplots(1, 1)
-    X, Y = np.mgrid[-1:1:512j, -1:1:512j]
-    rot = 2 * np.pi
-    rotX, rotY = np.cos(rot) * X + np.sin(rot) * Y, -np.sin(rot) * X + np.cos(
-        rot) * Y
-    p = oam_pattern(rotX, rotY, [1, 1j, 1j, -1])
-    ax.imshow(np.angle(p))
-    plt.show()
+    def set_pattern_by_name(self, name: str):
+        """Set the current pattern by the name defined in the pattern class
+        The name is pattern.name
+        """
+        for index, pattern in enumerate(self.patterns):
+            if pattern.name == name:
+                self.change_scroll_widget(index)
+                break
 
 
 if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
     import sys
     app = QApplication(sys.argv)
-    w = PizzaPattern()
+    w = PatternContainer()
     w.show()
     app.exec()
