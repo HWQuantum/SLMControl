@@ -261,13 +261,27 @@ class Vector(QWidget):
         """
         new_component = XYController("v_{}".format(len(self.components) + 1),
                                      "R:", "θ:")
-        new_component.x.setValue(np.abs(c))
-        new_component.y.setValue(np.angle(c))
+        new_component.set_values_complex_polar(c)
+        new_component.value_changed.connect(self.value_changed.emit)
+
         self.layout.addRow(new_component)
         self.components.append(new_component)
 
+    @pyqtSlot(int)
+    def set_dimension(self, dim):
+        """Set the dimension of the vector
+        """
+        if dim > len(self.components):
+            for _ in range(dim - len(self.components)):
+                self.add_component()
+        else:
+            for _ in range(len(self.components) - dim):
+                self.remove_end_component()
+
+        self.value_changed.emit()
+
     def set_to_vector(self, v):
-        """Set the controllers to the given vector, adding and removing 
+        """Set the controllers to the given vector, adding and removing
         controllers as needed
         v is a vector of complex numbers
         """
@@ -278,58 +292,147 @@ class Vector(QWidget):
                 self.remove_end_component()
 
             for i, component in enumerate(self.components):
-                component.x.setValue(np.abs(v[i]))
-                component.y.setValue(np.angle(v[i]))
+                component.set_values_complex_polar(v[i])
         else:
             for i, c in enumerate(v[:len(self.components)]):
-                self.components[i].x.setValue(np.abs(c))
-                self.components[i].y.setValue(np.angle(c))
+                self.components[i].set_value_complex_polar(c)
             for c in v[len(self.components):]:
                 self.add_component(c)
 
-    def set_to_random_vector(self):
-        dim = np.random.randint(1, 10)
-        comps = np.random.rand(dim)
-        self.set_to_vector(comps)
+        self.value_changed.emit()
+
+    def get_vector(self):
+        """Get the vector contained in this controller
+        """
+        return np.array(
+            [c.get_values_complex_polar() for c in self.components])
+
+
+class MUBController(QWidget):
+    """A controller for MUBs
+    Contains spinboxes for mub selection and basis selection.
+
+    There's not a "get_vector" function in here because the MUBController 
+    doesn't know about the dimension that's wanted, so to get the vector,
+    you need to be in the parent widget.
+    """
+
+    value_changed = pyqtSignal()
+
+    def __init__(self):
+        super().__init__()
+        self.layout = QGridLayout()
+
+        self.mub = pg.SpinBox(int=True, step=1)
+        self.basis = pg.SpinBox(int=True, step=1)
+
+        self.mub.sigValueChanged.connect(self.value_changed.emit)
+        self.basis.sigValueChanged.connect(self.value_changed.emit)
+
+        self.layout.addWidget(QLabel("MUB:"), 0, 0)
+        self.layout.addWidget(self.mub, 0, 1)
+        self.layout.addWidget(QLabel("basis:"), 1, 0)
+        self.layout.addWidget(self.basis, 1, 1)
+
+        self.setLayout(self.layout)
+
+    def get_basis(self):
+        """Get the tuple (mub, basis)
+        """
+        return (self.mub.value(), self.basis.value())
 
 
 class PatternContainer(QWidget):
     """Container for all the different types of patterns
     """
-    def __init__(self):
+
+    value_changed = pyqtSignal()
+
+    def __init__(self, base_x, base_y):
+        """base_X and base_Y are the base ranges to calculate the 
+        complex field over. They're created with the numpy mgrid function
+        (or meshgrid if you're a numpty)
+        """
         super().__init__()
+
+        # Add all the member variables
+        self.base_x, self.base_y = base_x, base_y
+        self.x, self.y = base_x, base_y
+
         self.layout = QGridLayout()
 
         self.patterns = [PizzaPattern(), OAMPattern()]
         self.pattern_selector = QComboBox()
+        self.vector_selector = QComboBox()
         self.widget_control_scroll_area = QScrollArea()
+        self.vector_control_scroll_area = QScrollArea()
+        self.position = XYController("Position")
+        self.grating = XYController("Diffraction Grating")
+        self.dimension = pg.SpinBox(int=True,
+                                    step=1,
+                                    value=2,
+                                    bounds=(1, None))
+        self.rotation = pg.SpinBox()
+        self.vector_component_control = Vector(self.dimension.value())
+        self.vector_mub_control = MUBController()
+
+        # Add settings and setup n that
 
         self.widget_control_scroll_area.setWidgetResizable(True)
+        self.vector_control_scroll_area.setWidgetResizable(True)
 
         self.pattern_selector.addItems([p.name for p in self.patterns])
         self.widget_control_scroll_area.setWidget(
             self.patterns[self.pattern_selector.currentIndex()])
-        self.previous_index = self.pattern_selector.currentIndex()
+        self.vector_selector.addItems(["MUB controls", "vector controls"])
+
+        # Connect up signals
 
         self.pattern_selector.currentIndexChanged.connect(
             self.change_scroll_widget)
+        self.vector_selector.currentIndexChanged.connect(
+            self.change_vector_widget)
+        self.dimension.sigValueChanged.connect(self.set_dimension)
+        self.rotation.sigValueChanged.connect(self.change_rotation)
+
+        # Add widgets to layout
 
         self.layout.addWidget(self.pattern_selector)
         self.layout.addWidget(self.widget_control_scroll_area)
+        self.layout.addWidget(self.position)
+        self.layout.addWidget(self.grating)
+        self.layout.addWidget(self.vector_selector)
+        self.layout.addWidget(self.vector_control_scroll_area)
+        self.layout.addWidget(self.dimension)
+        self.layout.addWidget(self.rotation)
 
         self.setLayout(self.layout)
+
+        self.change_vector_widget(0)
+        self.previous_pos = self.position.get_values()
 
     @pyqtSlot(int)
     def change_scroll_widget(self, index):
         """Change the scroll widget in self.widget_control_scroll_area
         to the given index
         """
-        if index != self.previous_index:
-            self.patterns[
-                self.
-                previous_index] = self.widget_control_scroll_area.takeWidget()
-            self.widget_control_scroll_area.setWidget(self.patterns[index])
-            self.previous_index = index
+        self.widget_control_scroll_area.takeWidget()
+        self.widget_control_scroll_area.setWidget(self.patterns[index])
+
+    @pyqtSlot(int)
+    def change_vector_widget(self, index):
+        """Change the vector selection widget to either MUBs or components
+        """
+        if index == 0:
+            self.vector_control_scroll_area.takeWidget()
+            self.vector_control_scroll_area.setWidget(self.vector_mub_control)
+        if index == 1:
+            self.vector_control_scroll_area.takeWidget()
+            self.vector_control_scroll_area.setWidget(
+                self.vector_component_control)
+            self.vector_component_control.set_to_vector(
+                basis(self.dimension.value(),
+                      *self.vector_mub_control.get_basis()))
 
     def set_pattern_by_name(self, name: str):
         """Set the current pattern by the name defined in the pattern class
@@ -340,11 +443,47 @@ class PatternContainer(QWidget):
                 self.change_scroll_widget(index)
                 break
 
+    def set_dimension(self):
+        """Set the dimension of the vector components widget
+        """
+        self.vector_component_control.set_dimension(self.dimension.value())
+
+    def change_rotation(self):
+        """Change the rotation of self.x and self.y
+        """
+        rot = self.rotation.value()
+        pos = self.position.get_values()
+
+        self.x = (np.cos(rot) * self.base_x +
+                  np.sin(rot) * self.base_y) + pos[0]
+        self.y = (-np.sin(rot) * self.base_x +
+                  np.cos(rot) * self.base_y) + pos[1]
+
+        self.previous_pos = pos
+
+        self.value_changed.emit()
+
+    def change_position(self):
+        """Change the position of self.x and self.y, keeping the rotation
+        (cause rotation is expensive to calculate)
+        """
+        pos = self.position.get_values()
+        delta_x = pos[0] - self.previous_pos[0]
+        delta_y = pos[1] - self.previous_pos[1]
+
+        self.x += delta_x
+        self.y += delta_y
+
+        self.previous_pos = pos
+
+        self.value_changed.emit()
+
 
 if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
     import sys
     app = QApplication(sys.argv)
-    w = Vector(100)
+    x, y = np.mgrid[-1:1:100j, -1:1:100j]
+    w = PatternContainer(x, y)
     w.show()
     app.exec()
