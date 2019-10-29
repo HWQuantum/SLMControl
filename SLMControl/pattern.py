@@ -1,6 +1,6 @@
 import numpy as np
 from numba import njit
-from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QComboBox, QGroupBox, QScrollArea
+from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QComboBox, QGroupBox, QScrollArea, QVBoxLayout
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 import pyqtgraph as pg
 
@@ -165,10 +165,12 @@ class OAMPattern(QWidget):
 
 class XYController(QGroupBox):
     '''Define a control for x and y position
+    Has some functions for getting and setting the value as a 
+    complex number
     '''
     value_changed = pyqtSignal()
 
-    def __init__(self, name):
+    def __init__(self, name, x_name='x:', y_name='y:'):
         super().__init__()
         self.setTitle(name)
         self.layout = QGridLayout()
@@ -176,8 +178,8 @@ class XYController(QGroupBox):
         self.y = pg.SpinBox()
         self.x.sigValueChanged.connect(self.value_changed.emit)
         self.y.sigValueChanged.connect(self.value_changed.emit)
-        self.layout.addWidget(QLabel("x:"), 0, 0)
-        self.layout.addWidget(QLabel("y:"), 0, 5)
+        self.layout.addWidget(QLabel(x_name), 0, 0)
+        self.layout.addWidget(QLabel(y_name), 0, 5)
         self.layout.addWidget(self.x, 0, 1, 1, 4)
         self.layout.addWidget(self.y, 0, 6, 1, 4)
         self.setLayout(self.layout)
@@ -187,9 +189,31 @@ class XYController(QGroupBox):
         '''
         return (self.x.value(), self.y.value())
 
-    def set_values(self, *args, **kwargs):
-        '''Set the values from some dictionaries
+    def get_values_complex(self):
+        '''Get the values as a complex number
         '''
+        return self.x.value() + 1j * self.y.value()
+
+    def set_values_complex(self, c):
+        """Set the values from a complex number
+        """
+        self.x.setValue(c.real)
+        self.y.setValue(c.imag)
+
+    def get_values_complex_polar(self):
+        '''Get the values as a complex number with polar decomposition
+        '''
+        return self.x.value() * np.exp(1j * self.y.value())
+
+    def set_values_complex_polar(self, c):
+        """Set the values from a complex number with polar decomposition
+        """
+        self.x.setValue(np.abs(c))
+        self.y.setValue(np.angle(c))
+
+    def set_values(self, *args, **kwargs):
+        """Set the values from some dictionaries
+        """
         for arg in args:
             if type(arg) == dict:
                 for key, value in arg.items():
@@ -207,12 +231,33 @@ class XYController(QGroupBox):
             elif key == 'y':
                 self.y.setValue(value)
 
-class Vector(QWidget):
-    """A QWidget controller which generates the vectors for patterns
-    """
 
-    def __init__(self):
+class Vector(QWidget):
+    """A QWidget controller which allows control over the components of a vector
+    The components are in polar form: r, θ; v_j = r_j*exp(iθ_j)
+    """
+    def __init__(self, dim):
         super().__init__()
+        self.layout = QVBoxLayout()
+
+        self.components = [
+            XYController("C_{}".format(i), "R:", "θ") for i in range(dim)
+        ]
+
+        for comp in self.components:
+            self.layout.addWidget(comp)
+
+        button = QPushButton("This is a button")
+
+        self.layout.addWidget(button)
+        button.clicked.connect(self.remove_last_widget)
+
+        self.setLayout(self.layout)
+
+    def remove_last_widget(self):
+        removed = self.components.pop()
+        self.layout.removeWidget(removed)
+        removed.destroy()
 
 
 class PatternContainer(QWidget):
@@ -267,6 +312,6 @@ if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
     import sys
     app = QApplication(sys.argv)
-    w = PatternContainer()
+    w = Vector(3)
     w.show()
     app.exec()
