@@ -370,10 +370,12 @@ class PatternContainer(QWidget):
         self.vector_control_scroll_area = QScrollArea()
         self.slm_zernike_scroll_area = QScrollArea()
         self.position_zernike_scroll_area = QScrollArea()
-        self.slm_zernike = ZernikeSet(self.x, self.y, [(-2, 2), (0, 2),
-                                                       (2, 2)])
-        self.position_zernike = ZernikeSet(self.x, self.y, [(-2, 2), (0, 2),
-                                                            (2, 2)])
+        self.slm_zernike = ZernikeSet(self.x,
+                                      self.y, [(-2, 2), (0, 2), (2, 2)],
+                                      title="SLM Zernike Controls")
+        self.position_zernike = ZernikeSet(self.x,
+                                           self.y, [(-2, 2), (0, 2), (2, 2)],
+                                           title="Position Zernike Controls")
         self.position = XYController("Position")
         self.grating = XYController("Diffraction Grating")
         self.dimension = pg.SpinBox(int=True,
