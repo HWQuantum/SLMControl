@@ -397,6 +397,8 @@ class PatternContainer(QWidget):
         self.pattern_control_scroll_area.setWidget(
             self.patterns[self.pattern_selector.currentIndex()])
         self.vector_selector.addItems(["MUB controls", "vector controls"])
+        self.slm_zernike_scroll_area.setWidget(self.slm_zernike)
+        self.position_zernike_scroll_area.setWidget(self.position_zernike)
 
         # Connect up signals
 
@@ -412,7 +414,11 @@ class PatternContainer(QWidget):
 
         self.slm_zernike.value_changed.connect(self.value_changed.emit)
         self.position_zernike.value_changed.connect(self.value_changed.emit)
+        self.vector_mub_control.value_changed.connect(self.value_changed.emit)
+        self.vector_component_control.value_changed.connect(
+            self.value_changed.emit)
 
+        self.position_zernike.value_changed.connect(self.get_phases)
         # Add widgets to layout
 
         self.layout.addWidget(self.pattern_selector)
@@ -423,6 +429,8 @@ class PatternContainer(QWidget):
         self.layout.addWidget(self.vector_control_scroll_area)
         self.layout.addWidget(self.dimension)
         self.layout.addWidget(self.rotation)
+        self.layout.addWidget(self.slm_zernike_scroll_area)
+        self.layout.addWidget(self.position_zernike_scroll_area)
 
         self.setLayout(self.layout)
 
@@ -499,6 +507,22 @@ class PatternContainer(QWidget):
         self.previous_pos = pos
 
         self.value_changed.emit()
+
+    def get_vector_components(self):
+        """Get the vector components defined by this widget
+        """
+        if self.vector_selector.currentIndex() == 0:
+            return basis(self.dimension.value(), *self.vector_mub_control.get_basis())
+        else:
+            return self.vector_component_control.get_vector()
+
+    def get_phases(self):
+        """Get the phase pattern defined by this controller
+        """
+        d_x, d_y = self.grating.get_values()
+        position_zernike_image = self.position_zernike.get_pattern()
+        slm_zernike_image = self.slm_zernike.get_pattern()
+        pattern_image = self.pattern_control_scroll_area.widget().get_pattern(self.x, self.y, self.get_vector_components())
 
 
 if __name__ == "__main__":
