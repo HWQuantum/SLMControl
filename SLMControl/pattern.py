@@ -207,6 +207,13 @@ class XYController(QGroupBox):
             elif key == 'y':
                 self.y.setValue(value)
 
+class Vector(QWidget):
+    """A QWidget controller which generates the vectors for patterns
+    """
+
+    def __init__(self):
+        super().__init__()
+
 
 class PatternContainer(QWidget):
     """Container for all the different types of patterns
