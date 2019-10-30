@@ -127,11 +127,11 @@ class PizzaPattern(QWidget):
     def set_values(self, values):
         self.blockSignals(True)
         for k in [
-                "circle_innder_radius", "circle_outer_radius",
+                "circle_inner_radius", "circle_outer_radius",
                 "slice_fraction", "circle_fraction"
         ]:
             try:
-                self.getattr(k).setValue(values[k])
+                getattr(self, k).setValue(values[k])
             except KeyError:
                 pass
         self.blockSignals(False)
@@ -628,19 +628,18 @@ class PatternContainer(QWidget):
         """Set the values
         """
 
-        print("Setting stuff")
         self.blockSignals(True)
         try:
             self.pattern_selector.setCurrentIndex(values["pattern_selector"])
-            self.patterns[values["pattern_selector"].set_values(
-                values["pattern_control"])]
+            self.patterns[values["pattern_selector"]].set_values(
+                values["pattern_control"])
         except KeyError:
             pass
 
         try:
             self.vector_selector.setCurrentIndex(values["vector_selector"])
             if values["vector_selector"] == 0:
-                self.vector_mub_control.set_values(values["vector_control"])
+                self.vector_mub_control.set_values(*values["vector_control"])
             else:
                 self.vector_component_control.set_to_vector(
                     [complex(c) for c in values["vector_control"]])

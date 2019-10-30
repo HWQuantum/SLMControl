@@ -246,14 +246,14 @@ class SLMController(QWidget):
             "lut_list": self.lut_list,
         }
 
-    def set_values(self, value):
+    def set_values(self, values):
         try:
             self.pattern.set_values(values["pattern"])
         except KeyError:
             pass
 
         try:
-            self.lut_list.set_values(values["lut_list"])
+            self.lut_list = values["lut_list"]
         except KeyError:
             pass
 
@@ -281,6 +281,8 @@ class MultiSLMController(QWidget):
 
         save_button.clicked.connect(self.save_file)
         load_button.clicked.connect(self.open_file)
+
+        self.read_values_from_json_file('./saved_values')
 
     def closeEvent(self, event):
         for slm in self.slms:
