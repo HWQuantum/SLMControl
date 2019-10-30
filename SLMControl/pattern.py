@@ -150,7 +150,15 @@ class OAMPattern(QWidget):
 
         amplitude = np.abs(components)
         phase = np.angle(components)
-        angular_momentum = np.linspace(-ang_mom_limit, ang_mom_limit, dim)
+        if dim % 2 != 0:
+            # if dimension is odd, then we want to make it so the 0 component
+            # corresponds to the l=0 mode
+            # we do this by rolling the array
+            angular_momentum = np.roll(
+                np.linspace(-ang_mom_limit, ang_mom_limit, dim),
+                int(-((dim - 1) / 2)))
+        else:
+            angular_momentum = np.linspace(-ang_mom_limit, ang_mom_limit, dim)
         theta = np.arctan2(Y, X)
         return np.sum([
             amplitude[i] * np.exp(1j * (l * theta + phase[i]))
@@ -200,8 +208,11 @@ class XYController(QGroupBox):
     def set_values_complex(self, c):
         """Set the values from a complex number
         """
+        self.blockSignals(True)
         self.x.setValue(c.real)
         self.y.setValue(c.imag)
+        self.blockSignals(False)
+        self.value_changed.emit()
 
     def get_values_complex_polar(self):
         '''Get the values as a complex number with polar decomposition
@@ -211,12 +222,16 @@ class XYController(QGroupBox):
     def set_values_complex_polar(self, c):
         """Set the values from a complex number with polar decomposition
         """
+        self.blockSignals(True)
         self.x.setValue(np.abs(c))
         self.y.setValue(np.angle(c))
+        self.blockSignals(False)
+        self.value_changed.emit()
 
     def set_values(self, *args, **kwargs):
         """Set the values from some dictionaries
         """
+        self.blockSignals(True)
         for arg in args:
             if type(arg) == dict:
                 for key, value in arg.items():
@@ -233,6 +248,8 @@ class XYController(QGroupBox):
                 self.x.setValue(value)
             elif key == 'y':
                 self.y.setValue(value)
+        self.blockSignals(False)
+        self.value_changed.emit()
 
 
 class Vector(QWidget):
@@ -274,6 +291,7 @@ class Vector(QWidget):
     def set_dimension(self, dim):
         """Set the dimension of the vector
         """
+        self.blockSignals(True)
         if dim > len(self.components):
             for _ in range(dim - len(self.components)):
                 self.add_component()
@@ -281,6 +299,7 @@ class Vector(QWidget):
             for _ in range(len(self.components) - dim):
                 self.remove_end_component()
 
+        self.blockSignals(False)
         self.value_changed.emit()
 
     def set_to_vector(self, v):
@@ -289,23 +308,21 @@ class Vector(QWidget):
         v is a vector of complex numbers
         """
         dim = len(v)
+        self.blockSignals(True)
 
         if dim <= len(self.components):
             for _ in range(len(self.components) - dim):
                 self.remove_end_component()
 
             for i, component in enumerate(self.components):
-                component.blockSignals(True)
                 component.set_values_complex_polar(v[i])
-                component.blockSignals(False)
         else:
             for i, c in enumerate(v[:len(self.components)]):
-                self.components[i].blockSignals(True)
                 self.components[i].set_value_complex_polar(c)
-                self.components[i].blockSignals(False)
             for c in v[len(self.components):]:
                 self.add_component(c)
 
+        self.blockSignals(False)
         self.value_changed.emit()
 
     def get_vector(self):
@@ -319,7 +336,7 @@ class MUBController(QWidget):
     """A controller for MUBs
     Contains spinboxes for mub selection and basis selection.
 
-    There's not a "get_vector" function in here because the MUBController 
+    There's not a "get_vector" function in here because the MUBController
     doesn't know about the dimension that's wanted, so to get the vector,
     you need to be in the parent widget.
     """
@@ -347,6 +364,15 @@ class MUBController(QWidget):
         """Get the tuple (mub, basis)
         """
         return (self.mub.value(), self.basis.value())
+
+    def set_values(self, mub, basis):
+        """Set the values from a MUB and a basis
+        """
+        self.blockSignals(True)
+        self.mub.setValue(mub)
+        self.basis.setValue(basis)
+        self.blockSignals(False)
+        self.value_changed.emit()
 
 
 class PatternContainer(QWidget):
@@ -462,6 +488,7 @@ class PatternContainer(QWidget):
     def change_vector_widget(self, index):
         """Change the vector selection widget to either MUBs or components
         """
+        self.blockSignals(True)
         if index == 0:
             self.vector_control_scroll_area.takeWidget()
             self.vector_control_scroll_area.setWidget(self.vector_mub_control)
@@ -472,6 +499,7 @@ class PatternContainer(QWidget):
             self.vector_component_control.set_to_vector(
                 basis(self.dimension.value(),
                       *self.vector_mub_control.get_basis()))
+        self.blockSignals(False)
 
         self.value_changed.emit()
 
