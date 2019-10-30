@@ -552,6 +552,8 @@ class PatternContainer(QWidget):
         scale = self.scaling.get_values()
         rot = self.rotation.value()
 
+        self.blockSignals(True)
+
         translate_scale_x = (self.base_x + new_position[0]) * scale[0]
         translate_scale_y = (self.base_y + new_position[1]) * scale[1]
 
@@ -564,6 +566,8 @@ class PatternContainer(QWidget):
             self.position_zernike.change_position(self.x, self.y)
 
         self.previous_pos = new_position
+
+        self.blockSignals(False)
 
         self.value_changed.emit()
 
@@ -623,6 +627,8 @@ class PatternContainer(QWidget):
     def set_values(self, values):
         """Set the values
         """
+
+        self.blockSignals(True)
         try:
             self.pattern_selector.setCurrentIndex(values["pattern_selector"])
             self.patterns[values["pattern_selector"].set_values(
@@ -654,6 +660,9 @@ class PatternContainer(QWidget):
                 getattr(self, c).set_values(values[c])
             except KeyError:
                 pass
+
+        self.blockSignals(True)
+        self.value_changed.emit()
 
 
 if __name__ == "__main__":
