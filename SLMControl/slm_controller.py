@@ -241,10 +241,21 @@ class SLMController(QWidget):
     def get_values(self):
         """Get the values
         """
-        return {}
+        return {
+            "pattern": self.pattern.get_values(),
+            "lut_list": self.lut_list,
+        }
 
-    def set_values(self, *args, **kwargs):
-        pass
+    def set_values(self, value):
+        try:
+            self.pattern.set_values(values["pattern"])
+        except KeyError:
+            pass
+
+        try:
+            self.lut_list.set_values(values["lut_list"])
+        except KeyError:
+            pass
 
 
 class MultiSLMController(QWidget):
@@ -257,9 +268,7 @@ class MultiSLMController(QWidget):
         load_button = QPushButton("Load values")
 
         self.slms = [
-            SLMController("SLM {}".format(i),
-                                        screens,
-                                        size)
+            SLMController("SLM {}".format(i), screens, size)
             for i, size in enumerate(slm_sizes)
         ]
 
@@ -323,7 +332,6 @@ class MultiSLMController(QWidget):
         filename, _ = QFileDialog.getSaveFileName(self, "Save file", "")
         if filename:
             self.save_values_to_json_file(filename)
-
 
 
 if __name__ == "__main__":

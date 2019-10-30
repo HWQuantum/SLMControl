@@ -111,8 +111,8 @@ class PizzaPattern(QWidget):
                                             lower_angle[i], upper_angle[i])
         else:
             field += components[0] * point_in_slice(
-                X, Y, circle_inner_radius, circle_outer_radius, lower_angle[i],
-                upper_angle[i])
+                X, Y, circle_inner_radius, circle_outer_radius, lower_angle[0],
+                upper_angle[0])
 
         return field
 
@@ -605,7 +605,7 @@ class PatternContainer(QWidget):
             "vector_control":
             self.vector_mub_control.get_values()
             if self.vector_selector.currentIndex() == 0 else
-            self.vector_component_control.get_vector(),
+            [str(c) for c in self.vector_component_control.get_vector()],
             "dimension":
             self.dimension.value(),
             "rotation":
@@ -628,6 +628,7 @@ class PatternContainer(QWidget):
         """Set the values
         """
 
+        print("Setting stuff")
         self.blockSignals(True)
         try:
             self.pattern_selector.setCurrentIndex(values["pattern_selector"])
@@ -642,7 +643,7 @@ class PatternContainer(QWidget):
                 self.vector_mub_control.set_values(values["vector_control"])
             else:
                 self.vector_component_control.set_to_vector(
-                    values["vector_control"])
+                    [complex(c) for c in values["vector_control"]])
         except KeyError:
             pass
 
@@ -661,7 +662,7 @@ class PatternContainer(QWidget):
             except KeyError:
                 pass
 
-        self.blockSignals(True)
+        self.blockSignals(False)
         self.value_changed.emit()
 
 
