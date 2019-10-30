@@ -387,7 +387,7 @@ class MUBController(QWidget):
 
         self.setLayout(self.layout)
 
-    def get_basis(self):
+    def get_values(self):
         """Get the tuple (mub, basis)
         """
         return (self.mub.value(), self.basis.value())
@@ -525,7 +525,7 @@ class PatternContainer(QWidget):
                 self.vector_component_control)
             self.vector_component_control.set_to_vector(
                 basis(self.dimension.value(),
-                      *self.vector_mub_control.get_basis()))
+                      *self.vector_mub_control.get_values()))
         self.blockSignals(False)
 
         self.value_changed.emit()
@@ -572,7 +572,7 @@ class PatternContainer(QWidget):
         """
         if self.vector_selector.currentIndex() == 0:
             return basis(self.dimension.value(),
-                         *self.vector_mub_control.get_basis())
+                         *self.vector_mub_control.get_values())
         else:
             return self.vector_component_control.get_vector()
 
@@ -599,7 +599,7 @@ class PatternContainer(QWidget):
             "vector_selector":
             self.vector_selector.currentIndex(),
             "vector_control":
-            self.vector_mub_control.get_basis()
+            self.vector_mub_control.get_values()
             if self.vector_selector.currentIndex() == 0 else
             self.vector_component_control.get_vector(),
             "dimension":
@@ -625,9 +625,35 @@ class PatternContainer(QWidget):
         """
         try:
             self.pattern_selector.setCurrentIndex(values["pattern_selector"])
+            self.patterns[values["pattern_selector"].set_values(
+                values["pattern_control"])]
         except KeyError:
             pass
-        
+
+        try:
+            self.vector_selector.setCurrentIndex(values["vector_selector"])
+            if values["vector_selector"] == 0:
+                self.vector_mub_control.set_values(values["vector_control"])
+            else:
+                self.vector_component_control.set_to_vector(
+                    values["vector_control"])
+        except KeyError:
+            pass
+
+        for c in ["dimension", "rotation"]:
+            try:
+                getattr(self, c).setValue(values[c])
+            except KeyError:
+                pass
+
+        for c in [
+                "grating", "position", "scaling", "slm_zernike",
+                "position_zernike"
+        ]:
+            try:
+                getattr(self, c).set_values(values[c])
+            except KeyError:
+                pass
 
 
 if __name__ == "__main__":
