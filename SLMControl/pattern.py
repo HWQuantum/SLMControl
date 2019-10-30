@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from numba import njit
 from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QComboBox, QGroupBox, QScrollArea, QVBoxLayout, QFormLayout
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
@@ -421,16 +422,18 @@ class PatternContainer(QWidget):
         self.position_zernike.value_changed.connect(self.get_phases)
         # Add widgets to layout
 
-        self.layout.addWidget(self.pattern_selector)
-        self.layout.addWidget(self.pattern_control_scroll_area)
-        self.layout.addWidget(self.position)
-        self.layout.addWidget(self.grating)
-        self.layout.addWidget(self.vector_selector)
-        self.layout.addWidget(self.vector_control_scroll_area)
-        self.layout.addWidget(self.dimension)
-        self.layout.addWidget(self.rotation)
-        self.layout.addWidget(self.slm_zernike_scroll_area)
-        self.layout.addWidget(self.position_zernike_scroll_area)
+        self.layout.addWidget(self.pattern_selector, 0, 0, 1, 2)
+        self.layout.addWidget(self.pattern_control_scroll_area, 1, 0, 1, 2)
+        self.layout.addWidget(self.vector_selector, 0, 2, 1, 2)
+        self.layout.addWidget(self.vector_control_scroll_area, 1, 2, 1, 2)
+        self.layout.addWidget(QLabel("Dimension:"), 2, 2)
+        self.layout.addWidget(self.dimension, 2, 3)
+        self.layout.addWidget(QLabel("Rotation:"), 2, 0)
+        self.layout.addWidget(self.rotation, 2, 1)
+        self.layout.addWidget(self.grating, 3, 0, 1, 2)
+        self.layout.addWidget(self.position, 3, 2, 1, 2)
+        self.layout.addWidget(self.slm_zernike_scroll_area, 4, 0, 1, 2)
+        self.layout.addWidget(self.position_zernike_scroll_area, 4, 2, 1, 2)
 
         self.setLayout(self.layout)
 
@@ -489,13 +492,15 @@ class PatternContainer(QWidget):
         self.y = (-np.sin(rot) * self.base_x +
                   np.cos(rot) * self.base_y) + pos[1]
 
+        self.position_zernike.change_position(self.x, self.y)
+
         self.previous_pos = pos
 
         self.value_changed.emit()
 
     def change_position(self):
         """Change the position of self.x and self.y, keeping the rotation
-        (cause rotation is expensive to calculate)
+        (cause rotation is more expensive to calculate)
         """
         pos = self.position.get_values()
         delta_x = pos[0] - self.previous_pos[0]
@@ -503,6 +508,8 @@ class PatternContainer(QWidget):
 
         self.x += delta_x
         self.y += delta_y
+
+        self.position_zernike.change_position(self.x, self.y)
 
         self.previous_pos = pos
 
@@ -512,7 +519,8 @@ class PatternContainer(QWidget):
         """Get the vector components defined by this widget
         """
         if self.vector_selector.currentIndex() == 0:
-            return basis(self.dimension.value(), *self.vector_mub_control.get_basis())
+            return basis(self.dimension.value(),
+                         *self.vector_mub_control.get_basis())
         else:
             return self.vector_component_control.get_vector()
 
@@ -522,14 +530,19 @@ class PatternContainer(QWidget):
         d_x, d_y = self.grating.get_values()
         position_zernike_image = self.position_zernike.get_pattern()
         slm_zernike_image = self.slm_zernike.get_pattern()
-        pattern_image = self.pattern_control_scroll_area.widget().get_pattern(self.x, self.y, self.get_vector_components())
+        pattern_image = self.pattern_control_scroll_area.widget().get_pattern(
+            self.x, self.y, self.get_vector_components())
+
+        return pattern_image * np.exp(
+            1j * (d_x * self.x +
+                  d_y * self.y)) * position_zernike_image * slm_zernike_image
 
 
 if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
     import sys
     app = QApplication(sys.argv)
-    x, y = np.mgrid[-1:1:1000j, -1:1:1000j]
+    x, y = np.mgrid[-1:1:512j, -1:1:512j]
     w = PatternContainer(x, y)
     w.show()
     app.exec()
