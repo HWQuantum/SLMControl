@@ -295,10 +295,14 @@ class Vector(QWidget):
                 self.remove_end_component()
 
             for i, component in enumerate(self.components):
+                component.blockSignals(True)
                 component.set_values_complex_polar(v[i])
+                component.blockSignals(False)
         else:
             for i, c in enumerate(v[:len(self.components)]):
+                self.components[i].blockSignals(True)
                 self.components[i].set_value_complex_polar(c)
+                self.components[i].blockSignals(False)
             for c in v[len(self.components):]:
                 self.add_component(c)
 
@@ -371,13 +375,14 @@ class PatternContainer(QWidget):
         self.vector_control_scroll_area = QScrollArea()
         self.slm_zernike_scroll_area = QScrollArea()
         self.position_zernike_scroll_area = QScrollArea()
-        self.slm_zernike = ZernikeSet(self.x,
-                                      self.y, [(-2, 2), (0, 2), (2, 2)],
+        self.slm_zernike = ZernikeSet(self.base_x,
+                                      self.base_y, [(-2, 2), (0, 2), (2, 2)],
                                       title="SLM Zernike Controls")
         self.position_zernike = ZernikeSet(self.x,
                                            self.y, [(-2, 2), (0, 2), (2, 2)],
                                            title="Position Zernike Controls")
         self.position = XYController("Position")
+        self.scaling = XYController("Scaling")
         self.grating = XYController("Diffraction Grating")
         self.dimension = pg.SpinBox(int=True,
                                     step=1,
@@ -388,6 +393,8 @@ class PatternContainer(QWidget):
         self.vector_mub_control = MUBController()
 
         # Add settings and setup n that
+
+        self.scaling.set_values((1, 1))
 
         self.pattern_control_scroll_area.setWidgetResizable(True)
         self.vector_control_scroll_area.setWidgetResizable(True)
@@ -408,8 +415,10 @@ class PatternContainer(QWidget):
         self.vector_selector.currentIndexChanged.connect(
             self.change_vector_widget)
         self.dimension.sigValueChanged.connect(self.set_dimension)
-        self.rotation.sigValueChanged.connect(self.change_rotation)
-        self.position.value_changed.connect(self.change_position)
+        self.rotation.sigValueChanged.connect(self.change_transform)
+        self.position.value_changed.connect(self.change_transform)
+        self.scaling.value_changed.connect(self.change_transform)
+        self.grating.value_changed.connect(self.value_changed.emit)
         for pattern in self.patterns:
             pattern.value_changed.connect(self.value_changed.emit)
 
@@ -418,8 +427,6 @@ class PatternContainer(QWidget):
         self.vector_mub_control.value_changed.connect(self.value_changed.emit)
         self.vector_component_control.value_changed.connect(
             self.value_changed.emit)
-
-        self.position_zernike.value_changed.connect(self.get_phases)
         # Add widgets to layout
 
         self.layout.addWidget(self.pattern_selector, 0, 0, 1, 2)
@@ -433,7 +440,8 @@ class PatternContainer(QWidget):
         self.layout.addWidget(self.grating, 3, 0, 1, 2)
         self.layout.addWidget(self.position, 3, 2, 1, 2)
         self.layout.addWidget(self.slm_zernike_scroll_area, 4, 0, 1, 2)
-        self.layout.addWidget(self.position_zernike_scroll_area, 4, 2, 1, 2)
+        self.layout.addWidget(self.position_zernike_scroll_area, 5, 0, 1, 2)
+        self.layout.addWidget(self.scaling, 4, 2, 1, 2)
 
         self.setLayout(self.layout)
 
@@ -481,37 +489,26 @@ class PatternContainer(QWidget):
         """
         self.vector_component_control.set_dimension(self.dimension.value())
 
-    def change_rotation(self):
-        """Change the rotation of self.x and self.y
+    def change_transform(self):
+        """Change the transform of the coordinates
+        This looks at the rotation, the scaling and the position
         """
+        new_position = self.position.get_values()
+        scale = self.scaling.get_values()
         rot = self.rotation.value()
-        pos = self.position.get_values()
 
-        self.x = (np.cos(rot) * self.base_x +
-                  np.sin(rot) * self.base_y) + pos[0]
-        self.y = (-np.sin(rot) * self.base_x +
-                  np.cos(rot) * self.base_y) + pos[1]
+        translate_scale_x = (self.base_x + new_position[0]) * scale[0]
+        translate_scale_y = (self.base_y + new_position[1]) * scale[1]
 
-        self.position_zernike.change_position(self.x, self.y)
+        self.x = np.cos(rot) * translate_scale_x + np.sin(
+            rot) * translate_scale_y
+        self.y = -np.sin(rot) * translate_scale_x + np.cos(
+            rot) * translate_scale_y
 
-        self.previous_pos = pos
+        if new_position != self.previous_pos:
+            self.position_zernike.change_position(self.x, self.y)
 
-        self.value_changed.emit()
-
-    def change_position(self):
-        """Change the position of self.x and self.y, keeping the rotation
-        (cause rotation is more expensive to calculate)
-        """
-        pos = self.position.get_values()
-        delta_x = pos[0] - self.previous_pos[0]
-        delta_y = pos[1] - self.previous_pos[1]
-
-        self.x += delta_x
-        self.y += delta_y
-
-        self.position_zernike.change_position(self.x, self.y)
-
-        self.previous_pos = pos
+        self.previous_pos = new_position
 
         self.value_changed.emit()
 
@@ -524,7 +521,7 @@ class PatternContainer(QWidget):
         else:
             return self.vector_component_control.get_vector()
 
-    def get_phases(self):
+    def get_pattern(self):
         """Get the phase pattern defined by this controller
         """
         d_x, d_y = self.grating.get_values()
@@ -534,8 +531,19 @@ class PatternContainer(QWidget):
             self.x, self.y, self.get_vector_components())
 
         return pattern_image * np.exp(
-            1j * (d_x * self.x +
-                  d_y * self.y)) * position_zernike_image * slm_zernike_image
+            1j *
+            (d_x * self.base_x +
+             d_y * self.base_y)) * position_zernike_image * slm_zernike_image
+
+    def get_values(self):
+        """Get the contained values
+        """
+        return {}
+
+    def set_values(self, *args, **kwargs):
+        """Set the values
+        """
+        pass
 
 
 if __name__ == "__main__":

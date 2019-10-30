@@ -5,7 +5,7 @@ and controls them itself to allow taking a run of measurements
 
 from PyQt5.QtWidgets import QWidget, QGridLayout, QPushButton, QFileDialog, QComboBox
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
-from slm_display import MultiSLMController
+from slm_controller import MultiSLMController
 from coincidence_counting import CoincidenceWidget
 from experiments import coincidences_3x3_with_correction, two_mub_17x17
 import os
@@ -59,7 +59,7 @@ class PizzaExperimentController(QWidget):
         self.run_experiment_button = QPushButton("Run EXPERIMENT")
         self.save_defaults_button = QPushButton("Save defaults")
         self.load_defaults_button = QPushButton("Load defaults")
-        self.slm_controller = MultiPixelController(screens, [(512, 512),
+        self.slm_controller = MultiSLMController(screens, [(512, 512),
                                                              (512, 512)])
 
         self.experiments = inspect.getmembers(experiments, inspect.isfunction)
