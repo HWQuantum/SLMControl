@@ -116,6 +116,27 @@ class PizzaPattern(QWidget):
 
         return field
 
+    def get_values(self):
+        return {
+            "circle_innder_radius": self.circle_inner_radius.value(),
+            "circle_outer_radius": self.circle_outer_radius.value(),
+            "slice_fraction": self.slice_fraction.value(),
+            "circle_fraction": self.circle_fraction.value(),
+        }
+
+    def set_values(self, values):
+        self.blockSignals(True)
+        for k in [
+                "circle_innder_radius", "circle_outer_radius",
+                "slice_fraction", "circle_fraction"
+        ]:
+            try:
+                self.getattr(k).setValue(values[k])
+            except KeyError:
+                pass
+        self.blockSignals(False)
+        self.value_changed.emit()
+
     def get_pattern(self, X, Y, components):
         """Get the pattern described by this controller.
         Extracts the values from the sliders
@@ -172,6 +193,12 @@ class OAMPattern(QWidget):
         the OAM has no controls
         """
         return OAMPattern.oam_pattern(X, Y, components)
+
+    def get_values(self):
+        return None
+
+    def set_values(self, values):
+        pass
 
 
 class XYController(QGroupBox):
@@ -566,12 +593,41 @@ class PatternContainer(QWidget):
     def get_values(self):
         """Get the contained values
         """
-        return {}
+        return {
+            "pattern_selector":
+            self.pattern_selector.currentIndex(),
+            "vector_selector":
+            self.vector_selector.currentIndex(),
+            "vector_control":
+            self.vector_mub_control.get_basis()
+            if self.vector_selector.currentIndex() == 0 else
+            self.vector_component_control.get_vector(),
+            "dimension":
+            self.dimension.value(),
+            "rotation":
+            self.rotation.value(),
+            "grating":
+            self.grating.get_values(),
+            "position":
+            self.position.get_values(),
+            "scaling":
+            self.scaling.get_values(),
+            "slm_zernike":
+            self.slm_zernike.get_values(),
+            "position_zernike":
+            self.position_zernike.get_values(),
+            "pattern_control":
+            self.pattern_control_scroll_area.widget().get_values(),
+        }
 
-    def set_values(self, *args, **kwargs):
+    def set_values(self, values):
         """Set the values
         """
-        pass
+        try:
+            self.pattern_selector.setCurrentIndex(values["pattern_selector"])
+        except KeyError:
+            pass
+        
 
 
 if __name__ == "__main__":
