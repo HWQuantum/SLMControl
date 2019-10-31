@@ -132,6 +132,11 @@ class FullScreenPlot(pg.PlotWidget):
         self.slm_display_size = size
         self.set_limits()
 
+    def closeEvent(self, event):
+        """Override the close event, so it just hides
+        """
+        self.hide()
+
 
 def points_to_lut(points):
     '''Converts a set of points into a LUT for pyqtgraph
@@ -155,9 +160,7 @@ class SLMController(QWidget):
         """
         super().__init__()
         self.screens = screens
-
         self.layout = QGridLayout()
-
         self.x, self.y = np.mgrid[-1:1:(slm_size[0] * 1j), -1:1:(slm_size[1] *
                                                                  1j)]
         self.slm_size = slm_size
@@ -177,7 +180,7 @@ class SLMController(QWidget):
             window_title, self.screens[self.screen_selector.currentIndex()],
             slm_size)
 
-        self.screen_selector.currentIndexChanged.connect(
+        self.screen_selector.activated.connect(
             lambda _: self.slm_window.set_screen(self.screens[
                 self.screen_selector.currentIndex()]))
 
