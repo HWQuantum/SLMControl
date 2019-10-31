@@ -260,6 +260,24 @@ class SLMController(QWidget):
         except KeyError:
             pass
 
+    def get_dimension(self, dimension):
+        """Get the dimension of the pattern controller
+        """
+        self.pattern.dimension.value()
+
+    def get_mub(self, mub):
+        """Get to mub control and set the mub
+        convenience function
+        """
+        self.pattern.change_vector_widget(0)
+        self.pattern.vector_mub_control.mub.value()
+
+    def get_basis(self, basis):
+        """Get the basis
+        convenience function
+        """
+        self.pattern.vector_mub_control.basis.value()
+
     def set_dimension(self, dimension):
         """Set the dimension of the pattern controller
         """

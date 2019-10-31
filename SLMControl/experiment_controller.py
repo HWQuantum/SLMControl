@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QAction, QFileDia
 from PyQt5.QtCore import QSettings
 
 from slm_controller import MultiSLMController
-# from coincidence_counting import CoincidenceWidget
+from coincidence_counting import CoincidenceWidget
 
 
 class ExperimentController(QMainWindow):
@@ -27,7 +27,7 @@ class ExperimentController(QMainWindow):
 
         self.slm_controller = MultiSLMController(screens, display_sizes)
         self.experiment_functions = experiment_functions
-        self.coincidence_counter = None
+        self.coincidence_counter = CoincidenceWidget()
 
         self.last_measurement_data = []
 
@@ -75,7 +75,7 @@ class ExperimentController(QMainWindow):
 
     def set_values(self, slm_values, coincidence_values):
         self.slm_controller.set_values(slm_values)
-        # self.coincidence_counter.set_values(coincidence_values)
+        self.coincidence_counter.set_values(coincidence_values)
 
     def load_values_from_default(self):
         settings = QSettings("HWQuantum", "SLMControl")
@@ -85,8 +85,8 @@ class ExperimentController(QMainWindow):
     def save_values_to_default(self):
         settings = QSettings("HWQuantum", "SLMControl")
         settings.setValue("slm_settings", self.slm_controller.get_values())
-        # settings.setValue("coincidence_settings",
-        #                   self.coincidence_counter.get_values())
+        settings.setValue("coincidence_settings",
+                          self.coincidence_counter.get_values())
 
     def load_values(self):
         filename, _ = QFileDialog.getOpenFileName(self, "Open File", "")
@@ -108,8 +108,8 @@ class ExperimentController(QMainWindow):
         if filename:
             settings = QSettings(filename, QSettings.IniFormat)
             settings.setValue("slm_settings", self.slm_controller.get_values())
-            # settings.setValue("coincidence_settings",
-            #                   self.coincidence_counter.get_values())
+            settings.setValue("coincidence_settings",
+                              self.coincidence_counter.get_values())
 
     def run_experiment(self, function):
         """Run an experiment using the given function

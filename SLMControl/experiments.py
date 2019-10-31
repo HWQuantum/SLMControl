@@ -43,8 +43,84 @@ def diagonal_measurement(slm_widget, coincidence_widget, application):
     '''Scan over multiple positions and take the standard deviation of the diagonal to measure the flatness of the state
     '''
     measurement_receiver = MeasurementReceiver()
+    integration_time = coincidence_widget.device_measurement.measurement_time.value(
+    )  # integration time in ms
+    coincidence_window = 6000  # coincidence window in ps
+    histogram_bins = 300  # number of bins for the histogram
+    sync_channel = 0  # the channel the values should be compared with
+    dim = slm_widget.slms[0].get_dimension()
+    mub = slm_widget.slms[0].get_mub()
+
+    slm_widget.slms[0].set_dimension(dim)
+    slm_widget.slms[1].set_dimension(dim)
+    slm_widget.slms[0].set_mub(mub)
+    slm_widget.slms[1].set_mub(mub)
+
+    diagonal = np.zeros((dim))
+
+    for b in range(dim):
+        slm_widget.slms[0].set_basis(b)
+        slm_widget.slms[1].set_basis(b)
+        application.processEvents()
+        sleep(0.2)
+
+        diagonal[
+            d] = coincidence_widget.measurement_thread.run_measurement_once(
+                integration_time, coincidence_window, histogram_bins,
+                sync_channel)[3][3]
+
+    measurement_receiver.set_key('coincidence_data')
+    measurement_receiver.add_data(diagonal)
+
+    fig, axs = plt.subplots(1, 1)
+    axs.imshow(np.diag(diagonal))
+    plt.show()
+
     return measurement_receiver
 
 
 diagonal_measurement.__menu_name__ = "Diagonal measurement"
 diagonal_measurement.__tooltip__ = "Take a diagonal measurement in the given MUB"
+
+
+def coincidence_measurement(slm_widget, coincidence_widget, application):
+    measurement_receiver = MeasurementReceiver()
+    integration_time = coincidence_widget.device_measurement.measurement_time.value(
+    )  # integration time in ms
+    coincidence_window = 6000  # coincidence window in ps
+    histogram_bins = 300  # number of bins for the histogram
+    sync_channel = 0  # the channel the values should be compared with
+    dim = slm_widget.slms[0].get_dimension()
+    mub = slm_widget.slms[0].get_mub()
+
+    slm_widget.slms[0].set_dimension(dim)
+    slm_widget.slms[1].set_dimension(dim)
+    slm_widget.slms[0].set_mub(mub)
+    slm_widget.slms[1].set_mub(mub)
+
+    coincidences = np.zeros((dim, dim))
+
+    for a in range(dim):
+        slm_widget.slms[0].set_basis(a)
+        for b in range(dim):
+            slm_widget.slms[1].set_basis(b)
+            application.processEvents()
+            sleep(0.2)
+            coincidences[
+                a,
+                b] = coincidence_widget.measurement_thread.run_measurement_once(
+                    integration_time, coincidence_window, histogram_bins,
+                    sync_channel)[3][3]
+
+    measurement_receiver.set_key('coincidence_data')
+    measurement_receiver.add_data(coincidences)
+
+    fig, axs = plt.subplots(1, 1)
+    axs.imshow(diagonal)
+    plt.show()
+
+    return measurement_receiver
+
+
+coincidence_measurement.__menu_name__ = "Coincidence measurement"
+coincidence_measurement.__tooltip__ = "Take the whole coincidence matrix in the given MUB"
