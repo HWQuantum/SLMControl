@@ -260,6 +260,24 @@ class SLMController(QWidget):
         except KeyError:
             pass
 
+    def set_dimension(self, dimension):
+        """Set the dimension of the pattern controller
+        """
+        self.pattern.dimension.setValue(dimension)
+
+    def set_mub(self, mub):
+        """Set to mub control and set the mub
+        convenience function
+        """
+        self.pattern.change_vector_widget(0)
+        self.pattern.vector_mub_control.mub.setValue(mub)
+
+    def set_basis(self, basis):
+        """Set the basis
+        convenience function
+        """
+        self.pattern.vector_mub_control.basis.setValue(basis)
+
 
 class MultiSLMController(QWidget):
     '''Controls for entanglement on multiple SLMs
