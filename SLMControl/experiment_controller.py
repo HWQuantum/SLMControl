@@ -32,6 +32,7 @@ class ExperimentController(QMainWindow):
         self.last_measurement_data = []
 
         layout.addWidget(self.slm_controller)
+        layout.addWidget(self.coincidence_counter)
 
         self.internal_widget = QWidget()
         self.internal_widget.setLayout(layout)
