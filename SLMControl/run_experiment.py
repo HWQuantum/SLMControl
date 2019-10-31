@@ -152,7 +152,6 @@ class PizzaExperimentController(QWidget):
             with open(filename, 'wb') as f:
                 self.measurement_receiver.save_data(f)
 
-
 if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
     app = QApplication([])

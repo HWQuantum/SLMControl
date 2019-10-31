@@ -267,25 +267,16 @@ class MultiSLMController(QWidget):
     def __init__(self, screens, slm_sizes):
         super().__init__()
         self.layout = QGridLayout()
-        save_button = QPushButton("Save values")
-        load_button = QPushButton("Load values")
 
         self.slms = [
             SLMController("SLM {}".format(i), screens, size)
             for i, size in enumerate(slm_sizes)
         ]
 
-        self.layout.addWidget(save_button, 0, 0)
-        self.layout.addWidget(load_button, 0, 1)
         for i, slm in enumerate(self.slms):
-            self.layout.addWidget(slm, i + 1, 0, 1, 2)
+            self.layout.addWidget(slm, i, 0)
 
         self.setLayout(self.layout)
-
-        save_button.clicked.connect(self.save_file)
-        load_button.clicked.connect(self.open_file)
-
-        self.read_values_from_json_file('./saved_values')
 
     def closeEvent(self, event):
         for slm in self.slms:
