@@ -9,7 +9,6 @@ class ExperimentController(QMainWindow):
         super().__init__()
 
         layout = QHBoxLayout()
-        self.settings = QSettings("HWQuantum", "SLMControl")
 
         self.slm_controller = MultiSLMController(screens, display_sizes)
 
@@ -19,12 +18,18 @@ class ExperimentController(QMainWindow):
         self.internal_widget.setLayout(layout)
         self.setCentralWidget(self.internal_widget)
 
-        
-    def create_actions(self):
-        pass
+        self.create_menus()
+        self.load_values_from_default()
 
     def create_menus(self):
-        pass
+        save_defaults_action = QAction("Save new defaults", self)
+        save_defaults_action.triggered.connect(self.save_values_to_default)
+        load_defaults_action = QAction("Load defaults", self)
+        load_defaults_action.triggered.connect(self.load_values_from_default)
+        main_menu = self.menuBar()
+        file_menu = main_menu.addMenu("File")
+        file_menu.addAction(save_defaults_action)
+        file_menu.addAction(load_defaults_action)
 
     def closeEvent(self, event):
         self.slm_controller.close()
