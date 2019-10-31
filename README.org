@@ -38,7 +38,7 @@ Just run SLMControl/slm_display.py, and it'll appear.
    - [X] In coincidence_counting, make the measure_and_get_values function not block the GUI
      this is caused by the rust function not release the GIL
      maybe pyobject3 has some way to release the GIL in this function?
-   - [ ] Change all the set value functions from .set_values() to .setValue() to mirror the pyqtgraph widget function
+   - [ ] Look at changing the current json based settings into use the QSettings class
 
      
 ** Redesigning the pattern control interface
