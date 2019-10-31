@@ -212,7 +212,7 @@ class CoincidencePlot(pg.PlotWidget):
     '''
     def __init__(self, number_of_values):
         super().__init__()
-        self.data = np.zeros((1))
+        self.data = np.zeros((number_of_values))
         self.coincidence_plot = self.plot(self.data)
         self.max_values = number_of_values
 
@@ -233,7 +233,8 @@ class CoincidencePlot(pg.PlotWidget):
 
     @pyqtSlot()
     def clear_plot(self):
-        self.coincidence_plot.setData(np.zeros((len(self.data))))
+        self.data = np.zeros(self.data.shape)
+        self.update_plot()
 
 
 class SinglesPlot(pg.PlotWidget):
@@ -244,7 +245,10 @@ class SinglesPlot(pg.PlotWidget):
     def __init__(self, number_of_values):
         super().__init__()
         self.max_values = number_of_values
-        self.data = [np.zeros((1)), np.zeros((1))]
+        self.data = [
+            np.zeros((number_of_values)),
+            np.zeros((number_of_values))
+        ]
         pens = [pg.mkPen('w'), pg.mkPen('r')]
         self.plots = [
             self.plot(d, pen=pens[i]) for i, d in enumerate(self.data)
@@ -270,7 +274,7 @@ class SinglesPlot(pg.PlotWidget):
     @pyqtSlot()
     def clear_plot(self):
         for i, d in enumerate(self.data):
-            self.data[i] = np.zeros((1))
+            self.data[i] = np.zeros(self.data[i].shape)
         self.update_plot()
 
 
@@ -419,7 +423,8 @@ class DeviceMeasurement(QWidget):
 
     @pyqtSlot(int, int, list, list, list)
     def update_data(self, time, coincidence_window, singles, coincs, hists):
-        '''Update the plots based on the counts data'''
+        """Update the plots based on the counts data
+        """
         channel_1 = self.sync_channel.currentIndex()
         channel_2 = self.other_channel.currentIndex()
 
@@ -472,6 +477,9 @@ class DeviceMeasurement(QWidget):
 
     @pyqtSlot(bool)
     def try_run_measurement(self, checked):
+        """Try to run a measurement. This checks if the measurement button
+        has been toggled on
+        """
         if checked:
             # the measurement button has been toggled on
             if self.measurement_button_first_push:
@@ -484,9 +492,9 @@ class DeviceMeasurement(QWidget):
 
     @pyqtSlot()
     def reset_measurement_button(self):
-        '''reset the state of the measurement button
+        """reset the state of the measurement button
         for use when a measurement fails
-        '''
+        """
         self.measurement_button_first_push = True
         self.run_measurement_button.setChecked(False)
 
