@@ -86,10 +86,7 @@ class PizzaExperimentController(QWidget):
         '''Function to try to load defaults from a given file
         '''
         if os.path.exists(defaults_filename):
-            try:
-                self.read_values_from_json_file(defaults_filename)
-            except:
-                pass
+            self.try_read_values_from_json_file(default_filename)
 
     def try_save_defaults(self, defaults_filename='.defaults.slmc'):
         '''Try to save the defaults
