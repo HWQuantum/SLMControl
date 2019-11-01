@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from time import sleep
+import pickle
 
 
 class MeasurementReceiver:
@@ -16,7 +17,7 @@ class MeasurementReceiver:
         """Sets the key to store in, converting any lists or dicts to tuples
         with the tuplise function
         """
-        self.key = tuplise(new_key)
+        self.key = MeasurementReceiver.tuplise(new_key)
         if self.key not in self.data:
             self.data[self.key] = []
 
@@ -32,9 +33,10 @@ class MeasurementReceiver:
         """Recursively converts any lists/dicts in data into tuples
         """
         if type(data) == list:
-            return tuple(tuplise(i) for i in data)
+            return tuple(MeasurementReceiver.tuplise(i) for i in data)
         elif type(data) == dict:
-            return tuple((":key:", k, tuplise(v)) for k, v in data.items())
+            return tuple((":key:", k, MeasurementReceiver.tuplise(v))
+                         for k, v in data.items())
         else:
             return data
 
@@ -65,7 +67,7 @@ def diagonal_measurement(slm_widget, coincidence_widget, application):
         sleep(0.2)
 
         diagonal[
-            d] = coincidence_widget.measurement_thread.run_measurement_once(
+            b] = coincidence_widget.measurement_thread.run_measurement_once(
                 integration_time, coincidence_window, histogram_bins,
                 sync_channel)[3][3]
 
@@ -116,7 +118,7 @@ def coincidence_measurement(slm_widget, coincidence_widget, application):
     measurement_receiver.add_data(coincidences)
 
     fig, axs = plt.subplots(1, 1)
-    axs.imshow(diagonal)
+    axs.imshow(coincidences)
     plt.show()
 
     return measurement_receiver
