@@ -1,11 +1,31 @@
-from PyQt5.QtWidgets import QWidget, QFormLayout, QGridLayout, QScrollArea, QPushButton
+from PyQt5.QtWidgets import QWidget, QFormLayout, QGridLayout, QScrollArea, QPushButton, QHBoxLayout, QGroupBox
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 import pyqtgraph as pg
 import numpy as np
 
-from oam_pattern_controls import XYController, CloseWrapper
+from pattern import XYController
 
 LUT_plot_xs = np.linspace(-np.pi, np.pi, 100)
+
+
+class CloseWrapper(QGroupBox):
+    """Wrap a widget with a close button
+    """
+    close = pyqtSignal()
+
+    def __init__(self, other_widget):
+        super().__init__()
+        self.wrapped = other_widget
+
+        layout = QHBoxLayout()
+        close = QPushButton("Close")
+
+        close.clicked.connect(self.close.emit)
+
+        layout.addWidget(self.wrapped, 6)
+        layout.addWidget(close, 1)
+
+        self.setLayout(layout)
 
 
 class LUTPoints(QWidget):
