@@ -126,8 +126,15 @@ class ExperimentController(QMainWindow):
     def run_experiment(self, function):
         """Run an experiment using the given function
         """
-        self.last_measurement_data.append(
-            function(self.slm_controller, self.coincidence_counter, self.app))
+        try:
+            self.setEnabled(False)
+            self.last_measurement_data.append(
+                function(self.slm_controller, self.coincidence_counter,
+                         self.app))
+        except:
+            pass
+        finally:
+            self.setEnabled(True)
 
 
 if __name__ == "__main__":
