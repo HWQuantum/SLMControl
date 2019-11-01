@@ -46,6 +46,9 @@ class ExperimentController(QMainWindow):
         save_defaults_action.triggered.connect(self.save_values_to_default)
         load_defaults_action = QAction("Load defaults", self)
         load_defaults_action.triggered.connect(self.load_values_from_default)
+        forget_defaults_action = QAction("Forget defaults", self)
+        forget_defaults_action.triggered.connect(self.reset_defaults_to_zero)
+        forget_defaults_action.setToolTip("Forget the saved default values")
         save_action = QAction("Save values", self)
         save_action.triggered.connect(self.save_values)
         load_action = QAction("Load values", self)
@@ -56,6 +59,7 @@ class ExperimentController(QMainWindow):
         file_menu = main_menu.addMenu("File")
         file_menu.addAction(save_defaults_action)
         file_menu.addAction(load_defaults_action)
+        file_menu.addAction(forget_defaults_action)
         file_menu.addSeparator()
         file_menu.addAction(save_action)
         file_menu.addAction(load_action)
@@ -88,6 +92,13 @@ class ExperimentController(QMainWindow):
         settings.setValue("slm_settings", self.slm_controller.get_values())
         settings.setValue("coincidence_settings",
                           self.coincidence_counter.get_values())
+
+    def reset_defaults_to_zero(self):
+        """Reset all the values in the default QSettings to empty
+        """
+        settings = QSettings("HWQuantum", "SLMControl")
+        settings.setValue("slm_settings", {})
+        settings.setValue("coincidence_settings", {})
 
     def load_values(self):
         filename, _ = QFileDialog.getOpenFileName(self, "Open File", "")
