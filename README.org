@@ -5,20 +5,24 @@ Contains a bunch of qt widgets which allow for controlling SLM screens,
 setting the lookup tables, setting zernike polynomial corrections,
 choosing which desktop they display on, etc...
 
-If want to control two SLMs there's a program already written for that.
-Just run SLMControl/slm_display.py, and it'll appear.
-
 ** Use
-   There's two main files here:
-   - coincidence_counting.py
-   - slm_display.py
+   Run the file "experiment_controller.py" and you'll get an interface which allows 
+   control over SLMs.
      
-   You use slm_display.py for displaying OAM patterns on two slms at the same time
-   You use coincidence_counting.py for... coincidence counting :^)
+   You use slm_controller.py for displaying OAM patterns on slms.
+   You use coincidence_counting.py for coincidence counting :^).
    For coincidence counting to run, you need the hhlib_sys library for controlling 
    your Hydra Harp 400, which can be found [[https://github.com/HWQuantum/coincidence-counter][here]].
    Follow the instructions to compile that, then place the resulting library into the SLMControl
    folder in this repo.
+*** Experiments
+    All experiments are functions in the experiments.py file.
+    To make a new experiment, just add a function to that file that takes the arguments:
+    - slm_control
+    - coincidence_counter
+    - qapplication
+    And add a __menu_name__ and __tooltip__ string attribute to the function 
+    (so it appears in the qt experiments menu)
 
 ** Requirements
 *** Python requirements
