@@ -70,7 +70,8 @@ class ExperimentController(QMainWindow):
         for (name, tooltip, function) in self.experiment_functions:
             action = QAction(name, self)
             action.setToolTip(tooltip)
-            action.triggered.connect(lambda: self.run_experiment(function))
+            action.triggered.connect(
+                (lambda f: lambda: self.run_experiment(f))(function))
             experiment_menu.addAction(action)
 
     def closeEvent(self, event):
@@ -128,8 +129,7 @@ class ExperimentController(QMainWindow):
         """
         self.setEnabled(False)
         self.last_measurement_data.append(
-            function(self.slm_controller, self.coincidence_counter,
-                        self.app))
+            function(self.slm_controller, self.coincidence_counter, self.app))
         self.setEnabled(True)
 
 
