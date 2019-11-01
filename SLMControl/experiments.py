@@ -48,19 +48,19 @@ def diagonal_measurement(slm_widget, coincidence_widget, application):
     coincidence_window = 6000  # coincidence window in ps
     histogram_bins = 300  # number of bins for the histogram
     sync_channel = 0  # the channel the values should be compared with
-    dim = slm_widget.slms[0].get_dimension()
-    mub = slm_widget.slms[0].get_mub()
+    dim = slm_widget.slms[0].dimension
+    mub = slm_widget.slms[0].mub
 
-    slm_widget.slms[0].set_dimension(dim)
-    slm_widget.slms[1].set_dimension(dim)
-    slm_widget.slms[0].set_mub(mub)
-    slm_widget.slms[1].set_mub(mub)
+    slm_widget.slms[0].dimension = dim
+    slm_widget.slms[1].dimension = dim
+    slm_widget.slms[0].mub = mub
+    slm_widget.slms[1].mub = mub
 
     diagonal = np.zeros((dim))
 
     for b in range(dim):
-        slm_widget.slms[0].set_basis(b)
-        slm_widget.slms[1].set_basis(b)
+        slm_widget.slms[0].basis = b
+        slm_widget.slms[1].basis = b
         application.processEvents()
         sleep(0.2)
 
@@ -90,20 +90,20 @@ def coincidence_measurement(slm_widget, coincidence_widget, application):
     coincidence_window = 6000  # coincidence window in ps
     histogram_bins = 300  # number of bins for the histogram
     sync_channel = 0  # the channel the values should be compared with
-    dim = slm_widget.slms[0].get_dimension()
-    mub = slm_widget.slms[0].get_mub()
+    dim = slm_widget.slms[0].dimension
+    mub = slm_widget.slms[0].mub
 
-    slm_widget.slms[0].set_dimension(dim)
-    slm_widget.slms[1].set_dimension(dim)
-    slm_widget.slms[0].set_mub(mub)
-    slm_widget.slms[1].set_mub(mub)
+    slm_widget.slms[0].dimension = dim
+    slm_widget.slms[1].dimension = dim
+    slm_widget.slms[0].mub = mub
+    slm_widget.slms[1].mub = mub
 
     coincidences = np.zeros((dim, dim))
 
     for a in range(dim):
-        slm_widget.slms[0].set_basis(a)
+        slm_widget.slms[0].basis = a
         for b in range(dim):
-            slm_widget.slms[1].set_basis(b)
+            slm_widget.slms[1].basis = b
             application.processEvents()
             sleep(0.2)
             coincidences[
