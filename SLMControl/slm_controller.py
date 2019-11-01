@@ -260,42 +260,47 @@ class SLMController(QWidget):
         except KeyError:
             pass
 
-    def get_dimension(self):
+    @property
+    def dimension(self):
         """Get the dimension of the pattern controller
         """
         return self.pattern.dimension.value()
 
-    def get_mub(self):
-        """Get to mub control and set the mub
-        convenience function
+    @dimension.setter
+    def dimension(self, d):
+        """Set the dimension of the pattern controller
+        """
+        self.pattern.dimension.setValue(d)
+
+    @property
+    def mub(self):
+        """Change to mub control and get the mub
+
+        it's a convenience function
         """
         self.pattern.change_vector_widget(0)
         return self.pattern.vector_mub_control.mub.value()
 
-    def get_basis(self, basis):
-        """Get the basis
-        convenience function
-        """
-        self.pattern.vector_mub_control.basis.value()
-
-    def set_dimension(self, dimension):
-        """Set the dimension of the pattern controller
-        """
-        self.pattern.dimension.setValue(dimension)
-
-    def set_mub(self, mub):
-        """Set to mub control and set the mub
-        convenience function
+    @mub.setter
+    def mub(self, m):
+        """Change to mub control and set the mub
         """
         self.pattern.change_vector_widget(0)
-        self.pattern.vector_mub_control.mub.setValue(mub)
+        self.pattern.vector_mub_control.mub.setValue(m)
 
-    def set_basis(self, basis):
-        """Set the basis
-        convenience function
+
+    @property
+    def basis(self):
+        """Change to mub control and get the basis
         """
-        self.pattern.vector_mub_control.basis.setValue(basis)
+        self.pattern.change_vector_widget(0)
+        return self.pattern.vector_mub_control.basis.value()
 
+    @basis.setter
+    def basis(self, b):
+        self.pattern.change_vector_widget(0)
+        self.pattern.vector_mub_control.basis.setValue(b)
+        
 
 class MultiSLMController(QWidget):
     '''Controls for entanglement on multiple SLMs
