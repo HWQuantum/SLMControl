@@ -44,7 +44,9 @@ choosing which desktop they display on, etc...
      maybe pyobject3 has some way to release the GIL in this function?
    - [ ] Look at changing the current json based settings into use the QSettings class
    - [ ] Improve the lookup table widget.
-
+   - [ ] Add in the ability to save and load the state of individual widgets (use a context menu right click) [[https://wiki.python.org/moin/PyQt/Handling%2520context%2520menus][As described here]]
+   - [ ] Add in a pop-up widget (probably called from the file menu) which allows for fine-tuned adjusting of the x and y parameters of the slms
+     ( for automatic alignment )
      
 ** Redesigning the pattern control interface
 Each pattern has in common that it's generated over a given x-y grid (using the meshgrid function). 
