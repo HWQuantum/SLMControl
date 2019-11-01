@@ -256,7 +256,7 @@ class SLMController(QWidget):
             pass
 
         try:
-            self.lut_list = values["lut_list"]
+            self.update_LUT(values["lut_list"])
         except KeyError:
             pass
 
