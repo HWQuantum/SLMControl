@@ -320,7 +320,7 @@ class SplitSLMController(QWidget):
         self.bob = PatternContainer(self.x, self.y, disable_zernike=True)
         self.lut_control = None
         self.lut_control_button = QPushButton("Open LUT controls")
-        self.lut_list = [(-np.pi, 0), (np.pi, 255)]
+        self.lut_list = [[-np.pi, 0], [np.pi, 255]]
         self.plot = FullScreenPlot(slm_size, slm_size)
 
         for i, screen in enumerate(screens):
@@ -341,19 +341,50 @@ class SplitSLMController(QWidget):
         self.pattern_layout.addWidget(self.alice)
         self.pattern_layout.addWidget(self.bob)
 
+        self.match_alice_to_bob_button = QPushButton("Match Alice to Bob")
+        self.match_bob_to_alice_button = QPushButton("Match Bob to Alice")
+
+        self.match_alice_to_bob_button.clicked.connect(self.match_alice_to_bob)
+        self.match_bob_to_alice_button.clicked.connect(self.match_bob_to_alice)
+
         self.slm_layout.addWidget(QLabel("Display on:"), 0, 0)
         self.slm_layout.addWidget(self.screen_selector, 0, 1)
         self.slm_layout.addWidget(self.plot, 1, 0, 1, 2)
         self.slm_layout.addWidget(self.lut_control_button, 2, 0, 1, 2)
+        self.slm_layout.addWidget(self.match_bob_to_alice_button, 3, 0)
+        self.slm_layout.addWidget(self.match_alice_to_bob_button, 3, 0)
 
         self.main_layout.addItem(self.pattern_layout)
         self.main_layout.addItem(self.slm_layout)
 
-        self.setLayout(self.main_layout)
-        self.match_alice_to_bob()
 
-    def update_image(self):
-        pass
+        self.alice.set_pattern_by_name("Brownie Pattern")
+        self.bob.set_pattern_by_name("Brownie Pattern")
+
+        self.update_image()
+
+        self.setLayout(self.main_layout)
+
+
+    def update_image(self, update_alice=True, update_bob=True):
+        """Update the image that's displayed on the SLM display and
+        the widget's plot
+        If update_{alice, bob} is untrue then used their stored values
+        """
+        if update_alice:
+            self.alice_image = self.alice.get_pattern()
+        if update_bob:
+            self.bob_image = self.bob.get_pattern()
+
+        new_image = self.alice_image + self.bob_image
+
+        if self.overlay is None:
+            new_image = np.abs(new_image) * np.angle(new_image)
+        else:
+            new_image = np.abs(new_image) * np.angle(new_image * self.overlay)
+
+        self.plot.set_and_update_image(new_image)
+        self.slm_window.set_image(new_image)
 
     @pyqtSlot()
     def open_lut_control(self):

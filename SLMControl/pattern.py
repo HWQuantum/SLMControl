@@ -8,16 +8,17 @@ import pyqtgraph as pg
 
 from zernike_controls import ZernikeSet
 
-@njit()
+
 def point_in_square(px, py, sx, sy, w, h):
     """Check if the point (px, py) is inside the square defined by
     the centre (sx, sy) and width and height (w, h)
     """
-    lx = sx-w/2
-    rx = sx+w/2
-    ty = sy+h/2
-    by = sy-h/2
-    return (lx <= px < rx) and (by <= py < ty)
+    lx = sx - w / 2
+    rx = sx + w / 2
+    ty = sy + h / 2
+    by = sy - h / 2
+    return (lx <= px) & (px < rx) & (by <= py) & (py < ty)
+
 
 @njit()
 def point_in_slice(x, y, r, R, theta_1, theta_2):
@@ -211,6 +212,7 @@ class OAMPattern(QWidget):
     def set_values(self, values):
         pass
 
+
 class BrowniePattern(QTableWidget):
     """BrowniePattern gives the controls for a set of shapes
     """
@@ -222,10 +224,8 @@ class BrowniePattern(QTableWidget):
         super().__init__()
         self.setColumnCount(4)
         self.setHorizontalHeaderLabels(["x", "y", "width", "height"])
-        self.set_values([[2, 3, 4, 5], [4, 3, 5, 4], [4, 5, 6, 7]])
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-
 
     @pyqtSlot()
     def add_row(self, row_data=[0, 0, 0, 0]):
@@ -237,6 +237,10 @@ class BrowniePattern(QTableWidget):
         y = pg.SpinBox(value=row_data[1])
         w = pg.SpinBox(value=row_data[2])
         h = pg.SpinBox(value=row_data[3])
+        x.sigValueChanged.connect(self.value_changed.emit)
+        y.sigValueChanged.connect(self.value_changed.emit)
+        w.sigValueChanged.connect(self.value_changed.emit)
+        h.sigValueChanged.connect(self.value_changed.emit)
         self.setCellWidget(new_row_index, 0, x)
         self.setCellWidget(new_row_index, 1, y)
         self.setCellWidget(new_row_index, 2, w)
@@ -283,7 +287,7 @@ class BrowniePattern(QTableWidget):
         d = len(values)
 
         if d < row_count:
-            for _ in range(row_count-d):
+            for _ in range(row_count - d):
                 self.remove_row()
             row_count = d
 
@@ -295,7 +299,11 @@ class BrowniePattern(QTableWidget):
                 self.cellWidget(i, j).setValue(col)
 
     def get_pattern(self, X, Y, components):
-        return X
+        pixels = self.get_values()
+        field = np.zeros(X.shape, dtype=np.complex128)
+        for (i, (p, c)) in enumerate(zip(pixels, components)):
+            field += c * point_in_square(X, Y, *p)
+        return field
 
 
 class XYController(QGroupBox):
@@ -523,7 +531,11 @@ class PatternContainer(QWidget):
                                     step=1,
                                     value=2,
                                     bounds=(1, None))
-        self.patterns = [PizzaPattern(), OAMPattern(), BrowniePattern(self.dimension.value())]
+        self.patterns = [
+            PizzaPattern(),
+            OAMPattern(),
+            BrowniePattern(self.dimension.value())
+        ]
         self.pattern_selector = QComboBox()
         self.vector_selector = QComboBox()
         self.pattern_control_scroll_area = QScrollArea()
@@ -646,15 +658,17 @@ class PatternContainer(QWidget):
         """
         for index, pattern in enumerate(self.patterns):
             if pattern.name == name:
-                self.change_pattern_widget(index)
+                self.pattern_selector.setCurrentIndex(index)
                 break
 
     def set_dimension(self):
         """Set the dimension of the vector components widget
         """
         self.vector_component_control.set_dimension(self.dimension.value())
-        if self.patterns[self.pattern_selector.currentIndex()].name == "Brownie Pattern":
-            self.pattern_control_scroll_area.widget().set_dimension(self.dimension.value())
+        if self.patterns[self.pattern_selector.currentIndex(
+        )].name == "Brownie Pattern":
+            self.pattern_control_scroll_area.widget().set_dimension(
+                self.dimension.value())
 
     def change_transform(self):
         """Change the transform of the coordinates
