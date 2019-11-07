@@ -188,9 +188,11 @@ class SplitSLMExperimentController(QMainWindow):
         save_bob_dimension_action.triggered.connect(
             self.save_bob_dimension_settings)
         load_alice_dimension_action = QAction("Load Alice settings d", self)
-        load_alice_dimension_action.triggered.connect(self.load_alice_dimension_settings)
+        load_alice_dimension_action.triggered.connect(
+            self.load_alice_dimension_settings)
         load_bob_dimension_action = QAction("Load Bob settings d", self)
-        load_bob_dimension_action.triggered.connect(self.load_bob_dimension_settings)
+        load_bob_dimension_action.triggered.connect(
+            self.load_bob_dimension_settings)
         load_action = QAction("Load values", self)
         load_action.triggered.connect(self.load_values)
         save_last_measurement = QAction("Save last measurement", self)
@@ -312,13 +314,15 @@ class SplitSLMExperimentController(QMainWindow):
 
 if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
-    import experiments
+    import split_slm_experiments
     import inspect
     import sys
 
     app = QApplication(sys.argv)
-    functions = [(f[1].__menu_name__, f[1].__tooltip__, f[1])
-                 for f in inspect.getmembers(experiments, inspect.isfunction)]
+    functions = [
+        (f[1].__menu_name__, f[1].__tooltip__, f[1])
+        for f in inspect.getmembers(split_slm_experiments, inspect.isfunction)
+    ]
 
     # w = ExperimentController(app.screens(), [(512, 512), (512, 512)],
     #                          functions, app)

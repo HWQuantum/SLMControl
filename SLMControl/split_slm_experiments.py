@@ -1,0 +1,141 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from time import sleep
+import pickle
+
+from experiments import MeasurementReceiver
+
+
+def diagonal_measurement(s, coincidence_widget, application):
+    '''Scan over multiple positions and take the standard deviation of the diagonal to measure the flatness of the state
+    '''
+    measurement_receiver = MeasurementReceiver()
+    integration_time = coincidence_widget.device_measurement.measurement_time.value(
+    )  # integration time in ms
+    coincidence_window = 6000  # coincidence window in ps
+    histogram_bins = 300  # number of bins for the histogram
+    sync_channel = 0  # the channel the values should be compared with
+    dim = s.alice_dimension
+    mub = s.alice_mub
+
+    s.alice_dimension = dim
+    s.bob_dimension = dim
+    s.alice_mub = mub
+    s.bob_mub = mub
+
+    diagonal = np.zeros((dim))
+
+    for b in range(dim):
+        s.alice.basis = b
+        s.bob.basis = b
+        application.processEvents()
+        sleep(0.2)
+
+        diagonal[
+            b] = coincidence_widget.measurement_thread.run_measurement_once(
+                integration_time, coincidence_window, histogram_bins,
+                sync_channel)[3][3]
+
+    measurement_receiver.set_key('coincidence_data')
+    measurement_receiver.add_data(diagonal)
+
+    fig, axs = plt.subplots(1, 1)
+    axs.imshow(np.diag(diagonal))
+    plt.show()
+
+    return measurement_receiver
+
+
+diagonal_measurement.__menu_name__ = "Diagonal measurement"
+diagonal_measurement.__tooltip__ = "Take a diagonal measurement in the given MUB"
+
+
+def coincidence_measurement(s, coincidence_widget, application):
+    measurement_receiver = MeasurementReceiver()
+    integration_time = coincidence_widget.device_measurement.measurement_time.value(
+    )  # integration time in ms
+    coincidence_window = 6000  # coincidence window in ps
+    histogram_bins = 300  # number of bins for the histogram
+    sync_channel = 0  # the channel the values should be compared with
+    dim = s.alice.dimension
+    mub = s.alice.mub
+
+    s.alice.dimension = dim
+    s.bob.dimension = dim
+    s.alice.mub = mub
+    s.bob.mub = mub
+
+    coincidences = np.zeros((dim, dim))
+
+    for a in range(dim):
+        s.alice.basis = a
+        for b in range(dim):
+            s.bob.basis = b
+            application.processEvents()
+            sleep(0.2)
+            coincidences[
+                a,
+                b] = coincidence_widget.measurement_thread.run_measurement_once(
+                    integration_time, coincidence_window, histogram_bins,
+                    sync_channel)[3][3]
+
+    measurement_receiver.set_key('coincidence_data')
+    measurement_receiver.add_data(coincidences)
+
+    fig, axs = plt.subplots(1, 1)
+    axs.imshow(coincidences)
+    plt.show()
+
+    return measurement_receiver
+
+
+coincidence_measurement.__menu_name__ = "Coincidence measurement"
+coincidence_measurement.__tooltip__ = "Take the whole coincidence matrix in the given MUB"
+
+
+def all_mub_coincidence_measurement(s, coincidence_widget, application):
+    """Measure the coincidence matrix in all mubs
+    """
+    measurement_receiver = MeasurementReceiver()
+    integration_time = coincidence_widget.device_measurement.measurement_time.value(
+    )  # integration time in ms
+    coincidence_window = 6000  # coincidence window in ps
+    histogram_bins = 300  # number of bins for the histogram
+    sync_channel = 0  # the channel the values should be compared with
+    dim = s.alice.dimension
+
+    s.alice.dimension = dim
+    s.bob.dimension = dim
+
+    coincidences = np.zeros((dim + 1, dim, dim))
+
+    for mub in range(dim + 1):
+        s.alice.mub = mub
+        s.bob.mub = mub
+        for a in range(dim):
+            s.alice.basis = a
+            for b in range(dim):
+                s.bob.basis = b
+                application.processEvents()
+                sleep(0.15)
+                coincidences[
+                    mub, a,
+                    b] = coincidence_widget.measurement_thread.run_measurement_once(
+                        integration_time, coincidence_window, histogram_bins,
+                        sync_channel)[3][3]
+
+    measurement_receiver.set_key('coincidence_data')
+    measurement_receiver.add_data(coincidences)
+    with open("all_mubs_measurement_{}_dim".format(dim), "wb") as f:
+        measurement_receiver.save_data(f)
+
+    fig, axs = plt.subplots(1, dim + 1)
+    for i, ax in enumerate(axs):
+        ax.imshow(coincidences[i])
+    plt.show()
+
+    return measurement_receiver
+
+
+all_mub_coincidence_measurement.__menu_name__ = "All MUB Coincidence Measurement"
+all_mub_coincidence_measurement.__tooltip__ = "Measure the coincidence matrix in all MUBs"

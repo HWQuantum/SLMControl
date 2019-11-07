@@ -468,6 +468,85 @@ class SplitSLMController(QWidget):
         if "bob" in values:
             self.bob.set_values(values["bob"])
 
+    @property
+    def alice_dimension(self):
+        """Get the dimension of alice
+        """
+        return self.alice.dimension.value()
+
+    @alice_dimension.setter
+    def alice_dimension(self, d):
+        """Set the dimension of the pattern controller
+        """
+        self.alice.dimension.setValue(d)
+
+    @property
+    def alice_mub(self):
+        """Change to mub control and get the mub
+
+        it's a convenience function
+        """
+        self.alice.change_vector_widget(0)
+        return self.alice.vector_mub_control.mub.value()
+
+    @alice_mub.setter
+    def alice_mub(self, m):
+        """Change to mub control and set the mub
+        """
+        self.alice.change_vector_widget(0)
+        self.alice.vector_mub_control.mub.setValue(m)
+
+    @property
+    def alice_basis(self):
+        """Change to mub control and get the basis
+        """
+        self.alice.change_vector_widget(0)
+        return self.alice.vector_mub_control.basis.value()
+
+    @alice_basis.setter
+    def alice_basis(self, b):
+        self.alice.change_vector_widget(0)
+        self.alice.vector_mub_control.basis.setValue(b)
+
+    @property
+    def bob_dimension(self):
+        """Get the dimension of bob
+        """
+        return self.bob.dimension.value()
+
+    @bob_dimension.setter
+    def bob_dimension(self, d):
+        """Set the dimension of the pattern controller
+        """
+        self.bob.dimension.setValue(d)
+
+    @property
+    def bob_mub(self):
+        """Change to mub control and get the mub
+
+        it's a convenience function
+        """
+        self.bob.change_vector_widget(0)
+        return self.bob.vector_mub_control.mub.value()
+
+    @bob_mub.setter
+    def bob_mub(self, m):
+        """Change to mub control and set the mub
+        """
+        self.bob.change_vector_widget(0)
+        self.bob.vector_mub_control.mub.setValue(m)
+
+    @property
+    def bob_basis(self):
+        """Change to mub control and get the basis
+        """
+        self.bob.change_vector_widget(0)
+        return self.bob.vector_mub_control.basis.value()
+
+    @bob_basis.setter
+    def bob_basis(self, b):
+        self.bob.change_vector_widget(0)
+        self.bob.vector_mub_control.basis.setValue(b)
 
 class MultiSLMController(QWidget):
     '''Controls for entanglement on multiple SLMs
