@@ -300,7 +300,87 @@ class SLMController(QWidget):
     def basis(self, b):
         self.pattern.change_vector_widget(0)
         self.pattern.vector_mub_control.basis.setValue(b)
-        
+
+class SplitSLMController(QWidget):
+    """Controller for two patterns on the same SLM
+    """
+    def __init__(self, screens, slm_size, overlay=None):
+        super().__init__()
+        self.screens = screens
+        self.layout = QGridLayout()
+        self.x, self.y = np.mgrid[-1:1:(slm_size[0] * 1j), -1:1:(slm_size[1] *
+                                                                 1j)]
+        self.slm_size = slm_size
+
+        self.overlay = overlay
+        self.screen_selector = QComboBox()
+        self.alice = PatternContainer(self.x, self.y, disable_zernike = True)
+        self.bob = PatternContainer(self.x, self.y, disable_zernike = True)
+        self.lut_control = None
+        self.lut_control_button = QPushButton("Open LUT controls")
+        self.lut_list = [(-np.pi, 0), (np.pi, 255)]
+        self.plot = FullScreenPlot(slm_size, slm_size)
+
+        for i, screen in enumerate(screens):
+            self.screen_selector.addItem("Screen {}".format(i))
+
+        self.slm_window = SLMDisplay(
+            "Alice and Bob", self.screens[self.screen_selector.currentIndex()],
+            slm_size)
+
+        self.screen_selector.activated.connect(
+            lambda _: self.slm_window.set_screen(self.screens[
+                self.screen_selector.currentIndex()]))
+
+        self.alice.value_changed.connect(self.update_image)
+        self.bob.value_changed.connect(self.update_image)
+        self.lut_control_button.clicked.connect(self.open_lut_control)
+
+        self.layout.addWidget(self.alice, 0, 0)
+        self.layout.addWidget(self.bob, 1, 0)
+        # self.layout.addWidget(QLabel("Display on:"), 0, 0)
+        # self.layout.addWidget(self.screen_selector, 0, 1)
+        # self.layout.addWidget(self.lut_control_button, 0, 2, 1, 2)
+        # self.layout.addWidget(self.pattern, 1, 0, 1, 2)
+        # self.layout.addWidget(self.plot, 1, 2, 1, 2)
+
+        self.setLayout(self.layout)
+
+    def update_image(self):
+        pass
+
+    @pyqtSlot()
+    def open_lut_control(self):
+        """Open the lookup table controls in a separate window
+        """
+        if self.lut_control is None:
+            self.lut_control = LUTWidget(self.lut_list)
+            self.lut_control.value_changed.connect(self.update_LUT)
+            self.lut_control.closed.connect(self.remove_lut_control)
+            self.lut_control.show()
+
+    def remove_lut_control(self):
+        """Remove the lookup table control from the variable
+        """
+        self.lut_control = None
+
+    @pyqtSlot(list)
+    def update_LUT(self, new_lut):
+        """Update the lookup table
+        """
+        if len(new_lut) >= 2:
+            self.lut_list = new_lut
+            new_lut = points_to_lut(self.lut_list)
+            self.plot.update_LUT(new_lut)
+            self.slm_window.window.update_LUT(new_lut)
+
+    def closeEvent(self, event):
+        """Make sure the SLM window will close
+        """
+        self.slm_window.window.close()
+        if self.lut_control is not None:
+            self.lut_control.close()
+
 
 class MultiSLMController(QWidget):
     '''Controls for entanglement on multiple SLMs
@@ -375,7 +455,8 @@ if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
     app = QApplication([])
 
-    w = MultiSLMController(app.screens(), [(512, 512), (512, 512)])
+    # w = MultiSLMController(app.screens(), [(512, 512), (512, 512)])
+    w = SplitSLMController(app.screens(), (512, 512))
 
     w.show()
     app.exec()

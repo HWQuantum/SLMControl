@@ -1,12 +1,23 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from numba import njit
-from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QComboBox, QGroupBox, QScrollArea, QVBoxLayout, QFormLayout
+from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QComboBox, QGroupBox, QScrollArea, QVBoxLayout, QFormLayout, QTableWidget
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
+from PyQt5 import QtCore
 import pyqtgraph as pg
 
 from zernike_controls import ZernikeSet
 
+@njit()
+def point_in_square(px, py, sx, sy, w, h):
+    """Check if the point (px, py) is inside the square defined by
+    the centre (sx, sy) and width and height (w, h)
+    """
+    lx = sx-w/2
+    rx = sx+w/2
+    ty = sy+h/2
+    by = sy-h/2
+    return (lx <= px < rx) and (by <= py < ty)
 
 @njit()
 def point_in_slice(x, y, r, R, theta_1, theta_2):
@@ -127,8 +138,8 @@ class PizzaPattern(QWidget):
     def set_values(self, values):
         self.blockSignals(True)
         for k in [
-                "circle_inner_radius", "circle_outer_radius",
-                "slice_fraction", "circle_fraction"
+                "circle_inner_radius", "circle_outer_radius", "slice_fraction",
+                "circle_fraction"
         ]:
             try:
                 getattr(self, k).setValue(values[k])
@@ -199,6 +210,92 @@ class OAMPattern(QWidget):
 
     def set_values(self, values):
         pass
+
+class BrowniePattern(QTableWidget):
+    """BrowniePattern gives the controls for a set of shapes
+    """
+
+    value_changed = pyqtSignal()
+    name = "Brownie Pattern"
+
+    def __init__(self, dim):
+        super().__init__()
+        self.setColumnCount(4)
+        self.setHorizontalHeaderLabels(["x", "y", "width", "height"])
+        self.set_values([[2, 3, 4, 5], [4, 3, 5, 4], [4, 5, 6, 7]])
+        self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+
+
+    @pyqtSlot()
+    def add_row(self, row_data=[0, 0, 0, 0]):
+        """Add a row, optionally giving the data to be added
+        """
+        new_row_index = self.rowCount()
+        self.insertRow(new_row_index)
+        x = pg.SpinBox(value=row_data[0])
+        y = pg.SpinBox(value=row_data[1])
+        w = pg.SpinBox(value=row_data[2])
+        h = pg.SpinBox(value=row_data[3])
+        self.setCellWidget(new_row_index, 0, x)
+        self.setCellWidget(new_row_index, 1, y)
+        self.setCellWidget(new_row_index, 2, w)
+        self.setCellWidget(new_row_index, 3, h)
+
+    @pyqtSlot()
+    def remove_row(self, index=None):
+        """Remove a row. If index is None, remove the last row
+        otherwise remove at the index
+        """
+        if index is None:
+            self.removeRow(self.rowCount() - 1)
+
+        else:
+            self.removeRow(index)
+
+    def get_values(self):
+        """Return the contained values in a list of lists [[x, y, w, h]]
+        """
+        return [[
+            self.cellWidget(row, col).value()
+            for col in range(self.columnCount())
+        ] for row in range(self.rowCount())]
+
+    def set_dimension(self, d):
+        """Set the dimension of the table.
+        Removes widgets from the end if too large
+        Adds widgets to the end if too small.
+        """
+        row_count = self.rowCount()
+        if d == row_count:
+            return
+        elif d > row_count:
+            for _ in range(d - row_count):
+                self.add_row()
+        else:
+            for _ in range(row_count - d):
+                self.remove_row()
+
+    def set_values(self, values):
+        """Set the values from a list of lists [[x, y, w, h]]
+        """
+        row_count = self.rowCount()
+        d = len(values)
+
+        if d < row_count:
+            for _ in range(row_count-d):
+                self.remove_row()
+            row_count = d
+
+        elif d > row_count:
+            for row in values[row_count:]:
+                self.add_row(row)
+        for i, row in enumerate(values[:row_count]):
+            for j, col in enumerate(row):
+                self.cellWidget(i, j).setValue(col)
+
+    def get_pattern(self, X, Y, components):
+        return X
 
 
 class XYController(QGroupBox):
@@ -408,7 +505,7 @@ class PatternContainer(QWidget):
 
     value_changed = pyqtSignal()
 
-    def __init__(self, base_x, base_y):
+    def __init__(self, base_x, base_y, disable_zernike=False):
         """base_X and base_Y are the base ranges to calculate the 
         complex field over. They're created with the numpy mgrid function
         (or meshgrid if you're a numpty)
@@ -418,29 +515,33 @@ class PatternContainer(QWidget):
         # Add all the member variables
         self.base_x, self.base_y = base_x, base_y
         self.x, self.y = base_x, base_y
+        self.disable_zernike = disable_zernike
 
         self.layout = QGridLayout()
 
-        self.patterns = [PizzaPattern(), OAMPattern()]
-        self.pattern_selector = QComboBox()
-        self.vector_selector = QComboBox()
-        self.pattern_control_scroll_area = QScrollArea()
-        self.vector_control_scroll_area = QScrollArea()
-        self.slm_zernike_scroll_area = QScrollArea()
-        self.position_zernike_scroll_area = QScrollArea()
-        self.slm_zernike = ZernikeSet(self.base_x,
-                                      self.base_y, [(-2, 2), (0, 2), (2, 2)],
-                                      title="SLM Zernike Controls")
-        self.position_zernike = ZernikeSet(self.x,
-                                           self.y, [(-2, 2), (0, 2), (2, 2)],
-                                           title="Position Zernike Controls")
-        self.position = XYController("Position")
-        self.scaling = XYController("Scaling")
-        self.grating = XYController("Diffraction Grating")
         self.dimension = pg.SpinBox(int=True,
                                     step=1,
                                     value=2,
                                     bounds=(1, None))
+        self.patterns = [PizzaPattern(), OAMPattern(), BrowniePattern(self.dimension.value())]
+        self.pattern_selector = QComboBox()
+        self.vector_selector = QComboBox()
+        self.pattern_control_scroll_area = QScrollArea()
+        self.vector_control_scroll_area = QScrollArea()
+        if not self.disable_zernike:
+            self.slm_zernike_scroll_area = QScrollArea()
+            self.position_zernike_scroll_area = QScrollArea()
+            self.slm_zernike = ZernikeSet(self.base_x,
+                                          self.base_y, [(-2, 2), (0, 2),
+                                                        (2, 2)],
+                                          title="SLM Zernike Controls")
+            self.position_zernike = ZernikeSet(
+                self.x,
+                self.y, [(-2, 2), (0, 2), (2, 2)],
+                title="Position Zernike Controls")
+        self.position = XYController("Position")
+        self.scaling = XYController("Scaling")
+        self.grating = XYController("Diffraction Grating")
         self.rotation = pg.SpinBox()
         self.vector_component_control = Vector(self.dimension.value())
         self.vector_mub_control = MUBController()
@@ -451,15 +552,20 @@ class PatternContainer(QWidget):
 
         self.pattern_control_scroll_area.setWidgetResizable(True)
         self.vector_control_scroll_area.setWidgetResizable(True)
-        self.slm_zernike_scroll_area.setWidgetResizable(True)
-        self.position_zernike_scroll_area.setWidgetResizable(True)
+
+        if not self.disable_zernike:
+            self.slm_zernike_scroll_area.setWidgetResizable(True)
+            self.position_zernike_scroll_area.setWidgetResizable(True)
+            self.slm_zernike_scroll_area.setWidget(self.slm_zernike)
+            self.position_zernike_scroll_area.setWidget(self.position_zernike)
+            self.slm_zernike.value_changed.connect(self.value_changed.emit)
+            self.position_zernike.value_changed.connect(
+                self.value_changed.emit)
 
         self.pattern_selector.addItems([p.name for p in self.patterns])
         self.pattern_control_scroll_area.setWidget(
             self.patterns[self.pattern_selector.currentIndex()])
         self.vector_selector.addItems(["MUB controls", "vector controls"])
-        self.slm_zernike_scroll_area.setWidget(self.slm_zernike)
-        self.position_zernike_scroll_area.setWidget(self.position_zernike)
 
         # Connect up signals
 
@@ -475,8 +581,6 @@ class PatternContainer(QWidget):
         for pattern in self.patterns:
             pattern.value_changed.connect(self.value_changed.emit)
 
-        self.slm_zernike.value_changed.connect(self.value_changed.emit)
-        self.position_zernike.value_changed.connect(self.value_changed.emit)
         self.vector_mub_control.value_changed.connect(self.value_changed.emit)
         self.vector_component_control.value_changed.connect(
             self.value_changed.emit)
@@ -486,15 +590,19 @@ class PatternContainer(QWidget):
         self.layout.addWidget(self.pattern_control_scroll_area, 1, 0, 1, 2)
         self.layout.addWidget(self.vector_selector, 0, 2, 1, 2)
         self.layout.addWidget(self.vector_control_scroll_area, 1, 2, 1, 2)
-        self.layout.addWidget(QLabel("Dimension:"), 2, 2)
-        self.layout.addWidget(self.dimension, 2, 3)
-        self.layout.addWidget(QLabel("Rotation:"), 2, 0)
-        self.layout.addWidget(self.rotation, 2, 1)
+        self.layout.addWidget(QLabel("Dimension:"), 2, 0)
+        self.layout.addWidget(self.dimension, 2, 1)
+        self.layout.addWidget(QLabel("Rotation:"), 2, 2)
+        self.layout.addWidget(self.rotation, 2, 3)
         self.layout.addWidget(self.grating, 3, 0, 1, 2)
         self.layout.addWidget(self.position, 3, 2, 1, 2)
-        self.layout.addWidget(self.slm_zernike_scroll_area, 4, 0, 1, 2)
-        self.layout.addWidget(self.position_zernike_scroll_area, 5, 0, 1, 2)
-        self.layout.addWidget(self.scaling, 4, 2, 1, 2)
+        if not self.disable_zernike:
+            self.layout.addWidget(self.slm_zernike_scroll_area, 4, 0, 1, 2)
+            self.layout.addWidget(self.position_zernike_scroll_area, 5, 0, 1,
+                                  2)
+            self.layout.addWidget(self.scaling, 4, 2, 1, 2)
+        else:
+            self.layout.addWidget(self.scaling, 4, 0)
 
         self.setLayout(self.layout)
 
@@ -508,6 +616,8 @@ class PatternContainer(QWidget):
         """
         self.pattern_control_scroll_area.takeWidget()
         self.pattern_control_scroll_area.setWidget(self.patterns[index])
+        if self.patterns[index].name == "Brownie Pattern":
+            self.patterns[index].set_dimension(self.dimension.value())
 
         self.value_changed.emit()
 
@@ -543,6 +653,8 @@ class PatternContainer(QWidget):
         """Set the dimension of the vector components widget
         """
         self.vector_component_control.set_dimension(self.dimension.value())
+        if self.patterns[self.pattern_selector.currentIndex()].name == "Brownie Pattern":
+            self.pattern_control_scroll_area.widget().set_dimension(self.dimension.value())
 
     def change_transform(self):
         """Change the transform of the coordinates
@@ -562,7 +674,7 @@ class PatternContainer(QWidget):
         self.y = -np.sin(rot) * translate_scale_x + np.cos(
             rot) * translate_scale_y
 
-        if new_position != self.previous_pos:
+        if new_position != self.previous_pos and not self.disable_zernike:
             self.position_zernike.change_position(self.x, self.y)
 
         self.previous_pos = new_position
@@ -584,45 +696,72 @@ class PatternContainer(QWidget):
         """Get the phase pattern defined by this controller
         """
         d_x, d_y = self.grating.get_values()
-        position_zernike_image = self.position_zernike.get_pattern()
-        slm_zernike_image = self.slm_zernike.get_pattern()
         pattern_image = self.pattern_control_scroll_area.widget().get_pattern(
             self.x, self.y, self.get_vector_components())
+        if self.disable_zernike:
+            return pattern_image * np.exp(
+                1j * (d_x * self.base_x + d_y * self.base_y))
+        else:
+            position_zernike_image = self.position_zernike.get_pattern()
+            slm_zernike_image = self.slm_zernike.get_pattern()
 
-        return pattern_image * np.exp(
-            1j *
-            (d_x * self.base_x +
-             d_y * self.base_y)) * position_zernike_image * slm_zernike_image
+            return pattern_image * np.exp(
+                1j * (d_x * self.base_x + d_y * self.base_y)
+            ) * position_zernike_image * slm_zernike_image
 
     def get_values(self):
         """Get the contained values
         """
-        return {
-            "pattern_selector":
-            self.pattern_selector.currentIndex(),
-            "vector_selector":
-            self.vector_selector.currentIndex(),
-            "vector_control":
-            self.vector_mub_control.get_values()
-            if self.vector_selector.currentIndex() == 0 else
-            [str(c) for c in self.vector_component_control.get_vector()],
-            "dimension":
-            self.dimension.value(),
-            "rotation":
-            self.rotation.value(),
-            "grating":
-            self.grating.get_values(),
-            "position":
-            self.position.get_values(),
-            "scaling":
-            self.scaling.get_values(),
-            "slm_zernike":
-            self.slm_zernike.get_values(),
-            "position_zernike":
-            self.position_zernike.get_values(),
-            "pattern_control":
-            self.pattern_control_scroll_area.widget().get_values(),
-        }
+        if self.disable_zernike:
+            return {
+                "pattern_selector":
+                self.pattern_selector.currentIndex(),
+                "vector_selector":
+                self.vector_selector.currentIndex(),
+                "vector_control":
+                self.vector_mub_control.get_values()
+                if self.vector_selector.currentIndex() == 0 else
+                [str(c) for c in self.vector_component_control.get_vector()],
+                "dimension":
+                self.dimension.value(),
+                "rotation":
+                self.rotation.value(),
+                "grating":
+                self.grating.get_values(),
+                "position":
+                self.position.get_values(),
+                "scaling":
+                self.scaling.get_values(),
+                "pattern_control":
+                self.pattern_control_scroll_area.widget().get_values(),
+            }
+        else:
+            return {
+                "pattern_selector":
+                self.pattern_selector.currentIndex(),
+                "vector_selector":
+                self.vector_selector.currentIndex(),
+                "vector_control":
+                self.vector_mub_control.get_values()
+                if self.vector_selector.currentIndex() == 0 else
+                [str(c) for c in self.vector_component_control.get_vector()],
+                "dimension":
+                self.dimension.value(),
+                "rotation":
+                self.rotation.value(),
+                "grating":
+                self.grating.get_values(),
+                "position":
+                self.position.get_values(),
+                "scaling":
+                self.scaling.get_values(),
+                "slm_zernike":
+                self.slm_zernike.get_values(),
+                "position_zernike":
+                self.position_zernike.get_values(),
+                "pattern_control":
+                self.pattern_control_scroll_area.widget().get_values(),
+            }
 
     def set_values(self, values):
         """Set the values
@@ -670,6 +809,6 @@ if __name__ == "__main__":
     import sys
     app = QApplication(sys.argv)
     x, y = np.mgrid[-1:1:512j, -1:1:512j]
-    w = PatternContainer(x, y)
+    w = PatternContainer(x, y, True)
     w.show()
     app.exec()

@@ -1,6 +1,20 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QTableWidget, QSizePolicy
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QTableWidget, QSizePolicy, QHeaderView
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 import pyqtgraph as pg
+
+import numpy as np
+from numba import njit
+
+@njit()
+def point_in_square(px, py, sx, sy, w, h):
+    """Check if the point (px, py) is inside the square defined by
+    the centre (sx, sy) and width and height (w, h)
+    """
+    lx = sx-w/2
+    rx = sx+w/2
+    ty = sy+h/2
+    by = sy-h/2
+    return (lx <= px < rx) and (by <= py < ty)
 
 
 class ShapeController(QTableWidget):
@@ -13,9 +27,7 @@ class ShapeController(QTableWidget):
         super().__init__()
         self.setColumnCount(4)
         self.setHorizontalHeaderLabels(["x", "y", "width", "height"])
-        self.add_row()
-        self.add_row()
-        print(self.get_values())
+        self.set_values([[2, 3, 4, 5], [4, 3, 5, 4], [4, 5, 6, 7]])
 
     @pyqtSlot()
     def add_row(self, row_data=[0, 0, 0, 0]):
@@ -81,17 +93,8 @@ class ShapeController(QTableWidget):
             for row in values[row_count:]:
                 self.add_row(row)
         for i, row in enumerate(values[:row_count]):
-            for j, col in enumerate
-                self.cellWidget(row, col)
-
-        if d == row_count:
-        elif d > row_count:
-            for _ in range(d - row_count):
-                self.add_row()
-        else:
-            for _ in range(row_count - d):
-                self.remove_row()
-
+            for j, col in enumerate(row):
+                self.cellWidget(i, j).setValue(col)
 
 
 if __name__ == "__main__":
@@ -102,4 +105,5 @@ if __name__ == "__main__":
     w = ShapeController(2)
     w.show()
 
-    app.exec()
+    # app.exec()
+    print(point_in_square(0, 0, 1, 1, 1, 1))
