@@ -450,6 +450,24 @@ class SplitSLMController(QWidget):
             "pattern_control": pattern_control
         })
 
+    def get_values(self):
+        """Return the contained values
+        LUT and slm settings
+        """
+        return {"lut_list": self.lut_list,
+                "alice": self.alice.get_values(),
+                "bob": self.bob.get_values()}
+
+    def set_values(self, values):
+        """Set the values
+        """
+        if "lut_list" in values:
+            self.lut_list = values["lut_list"]
+        if "alice" in values:
+            self.alice.set_values(values["alice"])
+        if "bob" in values:
+            self.bob.set_values(values["bob"])
+
 
 class MultiSLMController(QWidget):
     '''Controls for entanglement on multiple SLMs
