@@ -352,7 +352,7 @@ class SplitSLMController(QWidget):
         self.slm_layout.addWidget(self.plot, 1, 0, 1, 2)
         self.slm_layout.addWidget(self.lut_control_button, 2, 0, 1, 2)
         self.slm_layout.addWidget(self.match_bob_to_alice_button, 3, 0)
-        self.slm_layout.addWidget(self.match_alice_to_bob_button, 3, 0)
+        self.slm_layout.addWidget(self.match_alice_to_bob_button, 3, 1)
 
         self.main_layout.addItem(self.pattern_layout)
         self.main_layout.addItem(self.slm_layout)
@@ -373,8 +373,14 @@ class SplitSLMController(QWidget):
         """
         if update_alice:
             self.alice_image = self.alice.get_pattern()
+            alice_norm = np.max(np.abs(self.alice_image))
+            if alice_norm > 0:
+                self.alice_image /= alice_norm
         if update_bob:
             self.bob_image = self.bob.get_pattern()
+            bob_norm = np.max(np.abs(self.bob_image))
+            if bob_norm > 0:
+                self.bob_image /= bob_norm
 
         new_image = self.alice_image + self.bob_image
 
