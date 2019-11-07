@@ -799,6 +799,8 @@ class PatternContainer(QWidget):
                 getattr(self, c).set_values(values[c])
             except KeyError:
                 pass
+            except AttributeError:
+                pass
 
         self.blockSignals(False)
         self.value_changed.emit()

@@ -1,5 +1,5 @@
 import numpy as np
-from PyQt5.QtWidgets import QWidget, QComboBox, QGridLayout, QPushButton, QLabel, QFileDialog
+from PyQt5.QtWidgets import QWidget, QComboBox, QGridLayout, QPushButton, QLabel, QFileDialog, QHBoxLayout, QVBoxLayout
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 import pyqtgraph as pg
 import json
@@ -288,7 +288,6 @@ class SLMController(QWidget):
         self.pattern.change_vector_widget(0)
         self.pattern.vector_mub_control.mub.setValue(m)
 
-
     @property
     def basis(self):
         """Change to mub control and get the basis
@@ -301,21 +300,24 @@ class SLMController(QWidget):
         self.pattern.change_vector_widget(0)
         self.pattern.vector_mub_control.basis.setValue(b)
 
+
 class SplitSLMController(QWidget):
     """Controller for two patterns on the same SLM
     """
     def __init__(self, screens, slm_size, overlay=None):
         super().__init__()
         self.screens = screens
-        self.layout = QGridLayout()
+        self.main_layout = QHBoxLayout()
+        self.pattern_layout = QVBoxLayout()
+        self.slm_layout = QGridLayout()
         self.x, self.y = np.mgrid[-1:1:(slm_size[0] * 1j), -1:1:(slm_size[1] *
                                                                  1j)]
         self.slm_size = slm_size
 
         self.overlay = overlay
         self.screen_selector = QComboBox()
-        self.alice = PatternContainer(self.x, self.y, disable_zernike = True)
-        self.bob = PatternContainer(self.x, self.y, disable_zernike = True)
+        self.alice = PatternContainer(self.x, self.y, disable_zernike=True)
+        self.bob = PatternContainer(self.x, self.y, disable_zernike=True)
         self.lut_control = None
         self.lut_control_button = QPushButton("Open LUT controls")
         self.lut_list = [(-np.pi, 0), (np.pi, 255)]
@@ -336,15 +338,19 @@ class SplitSLMController(QWidget):
         self.bob.value_changed.connect(self.update_image)
         self.lut_control_button.clicked.connect(self.open_lut_control)
 
-        self.layout.addWidget(self.alice, 0, 0)
-        self.layout.addWidget(self.bob, 1, 0)
-        # self.layout.addWidget(QLabel("Display on:"), 0, 0)
-        # self.layout.addWidget(self.screen_selector, 0, 1)
-        # self.layout.addWidget(self.lut_control_button, 0, 2, 1, 2)
-        # self.layout.addWidget(self.pattern, 1, 0, 1, 2)
-        # self.layout.addWidget(self.plot, 1, 2, 1, 2)
+        self.pattern_layout.addWidget(self.alice)
+        self.pattern_layout.addWidget(self.bob)
 
-        self.setLayout(self.layout)
+        self.slm_layout.addWidget(QLabel("Display on:"), 0, 0)
+        self.slm_layout.addWidget(self.screen_selector, 0, 1)
+        self.slm_layout.addWidget(self.plot, 1, 0, 1, 2)
+        self.slm_layout.addWidget(self.lut_control_button, 2, 0, 1, 2)
+
+        self.main_layout.addItem(self.pattern_layout)
+        self.main_layout.addItem(self.slm_layout)
+
+        self.setLayout(self.main_layout)
+        self.match_alice_to_bob()
 
     def update_image(self):
         pass
@@ -380,6 +386,32 @@ class SplitSLMController(QWidget):
         self.slm_window.window.close()
         if self.lut_control is not None:
             self.lut_control.close()
+
+    def match_alice_to_bob(self):
+        """Set alice's controls to match bob's
+        """
+        bob_values = self.bob.get_values()
+        pattern_selector = bob_values["pattern_selector"]
+        pattern_control = bob_values["pattern_control"]
+        dim = bob_values["dimension"]
+        self.alice.set_values({
+            "dimension": dim,
+            "pattern_selector": pattern_selector,
+            "pattern_control": pattern_control
+        })
+
+    def match_bob_to_alice(self):
+        """Set bob's controls to match alice's
+        """
+        alice_values = self.alice.get_values()
+        pattern_selector = alice_values["pattern_selector"]
+        pattern_control = alice_values["pattern_control"]
+        dim = alice_values["dimension"]
+        self.bob.set_values({
+            "dimension": dim,
+            "pattern_selector": pattern_selector,
+            "pattern_control": pattern_control
+        })
 
 
 class MultiSLMController(QWidget):
