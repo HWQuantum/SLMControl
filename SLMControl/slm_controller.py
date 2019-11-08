@@ -463,7 +463,7 @@ class SplitSLMController(QWidget):
         """Set the values
         """
         if "lut_list" in values:
-            self.lut_list = values["lut_list"]
+            self.update_LUT(values["lut_list"])
         if "alice" in values:
             self.alice.set_values(values["alice"])
         if "bob" in values:
