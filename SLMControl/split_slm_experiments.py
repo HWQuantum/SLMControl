@@ -176,13 +176,8 @@ def every_single_mub_coincidence_measurement(s, coincidence_widget,
 
     measurement_receiver.set_key('coincidence_data')
     measurement_receiver.add_data(coincidences)
-    with open("all_mubs_measurement_{}_dim".format(dim), "wb") as f:
+    with open("every_single_mub_measurement_{}_dim".format(dim), "wb") as f:
         measurement_receiver.save_data(f)
-
-    fig, axs = plt.subplots(1, dim + 1)
-    for i, ax in enumerate(axs):
-        ax.imshow(coincidences[i])
-    plt.show()
 
     return measurement_receiver
 
