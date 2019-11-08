@@ -26,8 +26,8 @@ def diagonal_measurement(s, coincidence_widget, application):
     diagonal = np.zeros((dim))
 
     for b in range(dim):
-        s.alice.basis = b
-        s.bob.basis = b
+        s.alice_basis = b
+        s.bob_basis = b
         application.processEvents()
         sleep(0.2)
 
@@ -57,20 +57,20 @@ def coincidence_measurement(s, coincidence_widget, application):
     coincidence_window = 6000  # coincidence window in ps
     histogram_bins = 300  # number of bins for the histogram
     sync_channel = 0  # the channel the values should be compared with
-    dim = s.alice.dimension
-    mub = s.alice.mub
+    dim = s.alice_dimension
+    mub = s.alice_mub
 
-    s.alice.dimension = dim
-    s.bob.dimension = dim
-    s.alice.mub = mub
-    s.bob.mub = mub
+    s.alice_dimension = dim
+    s.bob_dimension = dim
+    s.alice_mub = mub
+    s.bob_mub = mub
 
     coincidences = np.zeros((dim, dim))
 
     for a in range(dim):
-        s.alice.basis = a
+        s.alice_basis = a
         for b in range(dim):
-            s.bob.basis = b
+            s.bob_basis = b
             application.processEvents()
             sleep(0.2)
             coincidences[
@@ -102,20 +102,20 @@ def all_mub_coincidence_measurement(s, coincidence_widget, application):
     coincidence_window = 6000  # coincidence window in ps
     histogram_bins = 300  # number of bins for the histogram
     sync_channel = 0  # the channel the values should be compared with
-    dim = s.alice.dimension
+    dim = s.alice_dimension
 
-    s.alice.dimension = dim
-    s.bob.dimension = dim
+    s.alice_dimension = dim
+    s.bob_dimension = dim
 
     coincidences = np.zeros((dim + 1, dim, dim))
 
     for mub in range(dim + 1):
-        s.alice.mub = mub
-        s.bob.mub = mub
+        s.alice_mub = mub
+        s.bob_mub = mub
         for a in range(dim):
-            s.alice.basis = a
+            s.alice_basis = a
             for b in range(dim):
-                s.bob.basis = b
+                s.bob_basis = b
                 application.processEvents()
                 sleep(0.15)
                 coincidences[
