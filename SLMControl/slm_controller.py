@@ -350,9 +350,10 @@ class SplitSLMController(QWidget):
         self.slm_layout.addWidget(QLabel("Display on:"), 0, 0)
         self.slm_layout.addWidget(self.screen_selector, 0, 1)
         self.slm_layout.addWidget(self.plot, 1, 0, 1, 2)
-        self.slm_layout.addWidget(self.lut_control_button, 2, 0, 1, 2)
-        self.slm_layout.addWidget(self.match_bob_to_alice_button, 3, 0)
-        self.slm_layout.addWidget(self.match_alice_to_bob_button, 3, 1)
+        self.slm_layout.setRowStretch(2, 1)
+        self.slm_layout.addWidget(self.lut_control_button, 3, 0, 1, 2)
+        self.slm_layout.addWidget(self.match_bob_to_alice_button, 4, 0)
+        self.slm_layout.addWidget(self.match_alice_to_bob_button, 4, 1)
 
         self.main_layout.addItem(self.pattern_layout)
         self.main_layout.addItem(self.slm_layout)

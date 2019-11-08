@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from numba import njit
-from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QComboBox, QGroupBox, QScrollArea, QVBoxLayout, QFormLayout, QTableWidget
+from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QComboBox, QGroupBox, QScrollArea, QVBoxLayout, QFormLayout, QTableWidget, QHeaderView
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from PyQt5 import QtCore
 import pyqtgraph as pg
@@ -226,6 +226,7 @@ class BrowniePattern(QTableWidget):
         self.setHorizontalHeaderLabels(["x", "y", "width", "height"])
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
     @pyqtSlot()
     def add_row(self, row_data=[0, 0, 0, 0]):
