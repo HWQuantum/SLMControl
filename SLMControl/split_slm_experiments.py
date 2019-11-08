@@ -187,5 +187,5 @@ def every_single_mub_coincidence_measurement(s, coincidence_widget,
     return measurement_receiver
 
 
-all_mub_coincidence_measurement.__menu_name__ = "EVERY SINGLE MUB Coincidence Measurement"
-all_mub_coincidence_measurement.__tooltip__ = "Measure the coincidence matrix in all combinations of MUBs"
+every_single_mub_coincidence_measurement.__menu_name__ = "EVERY SINGLE MUB Coincidence Measurement"
+every_single_mub_coincidence_measurement.__tooltip__ = "Measure the coincidence matrix in all combinations of MUBs"
