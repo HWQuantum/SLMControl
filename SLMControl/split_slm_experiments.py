@@ -139,3 +139,53 @@ def all_mub_coincidence_measurement(s, coincidence_widget, application):
 
 all_mub_coincidence_measurement.__menu_name__ = "All MUB Coincidence Measurement"
 all_mub_coincidence_measurement.__tooltip__ = "Measure the coincidence matrix in all MUBs"
+
+
+def every_single_mub_coincidence_measurement(s, coincidence_widget,
+                                             application):
+    """Measure the coincidence matrix in all mubs vs all mubs
+    """
+    measurement_receiver = MeasurementReceiver()
+    integration_time = coincidence_widget.device_measurement.measurement_time.value(
+    )  # integration time in ms
+    coincidence_window = 6000  # coincidence window in ps
+    histogram_bins = 300  # number of bins for the histogram
+    sync_channel = 0  # the channel the values should be compared with
+    dim = s.alice_dimension
+
+    s.alice_dimension = dim
+    s.bob_dimension = dim
+
+    coincidences = np.zeros((dim + 1, dim + 1, dim, dim))
+
+    for mub_a in range(dim + 1):
+        s.alice_mub = mub_a
+        for mub_b in range(dim + 1):
+            s.bob_mub = mub_b
+            for a in range(dim):
+                s.alice_basis = a
+                for b in range(dim):
+                    s.bob_basis = b
+                    application.processEvents()
+                    sleep(0.15)
+                    coincidences[
+                        mub_a, mub_b, a,
+                        b] = coincidence_widget.measurement_thread.run_measurement_once(
+                            integration_time, coincidence_window,
+                            histogram_bins, sync_channel)[3][3]
+
+    measurement_receiver.set_key('coincidence_data')
+    measurement_receiver.add_data(coincidences)
+    with open("all_mubs_measurement_{}_dim".format(dim), "wb") as f:
+        measurement_receiver.save_data(f)
+
+    fig, axs = plt.subplots(1, dim + 1)
+    for i, ax in enumerate(axs):
+        ax.imshow(coincidences[i])
+    plt.show()
+
+    return measurement_receiver
+
+
+all_mub_coincidence_measurement.__menu_name__ = "EVERY SINGLE MUB Coincidence Measurement"
+all_mub_coincidence_measurement.__tooltip__ = "Measure the coincidence matrix in all combinations of MUBs"
