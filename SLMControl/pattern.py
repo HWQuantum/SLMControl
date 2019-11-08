@@ -451,7 +451,7 @@ class Vector(QWidget):
                 component.set_values_complex_polar(v[i])
         else:
             for i, c in enumerate(v[:len(self.components)]):
-                self.components[i].set_value_complex_polar(c)
+                self.components[i].set_values_complex_polar(c)
             for c in v[len(self.components):]:
                 self.add_component(c)
 
