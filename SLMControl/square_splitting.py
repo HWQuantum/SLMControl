@@ -56,7 +56,20 @@ class Rect:
         top_y = self.anchor_space[1] + (1 -
                                         self.anchor_rect[1]) * self.size[1]
         return (bottom_y, top_y)
-        
+
+    @property
+    def centre(self):
+        centre_x = self.anchor_space[0]+self.size[0]*(0.5-self.anchor_rect[0])
+        centre_y = self.anchor_space[1]+self.size[1]*(0.5-self.anchor_rect[1])
+        return (centre_x, centre_y)
+
+    @centre.setter
+    def centre(self, c):
+        """Set the centre of this rectangle
+        c is a tuple (x, y)
+        """
+        self.anchor_space = c
+        self.anchor_rect = (0.5, 0.5)
 
     def split_in_half_along_longest_axis(self, distance=0, split_point=0.5):
         """Return two squares which split this square along the shortest axis
