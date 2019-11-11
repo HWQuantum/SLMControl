@@ -220,10 +220,11 @@ class SplitSLMExperimentController(QMainWindow):
             action.triggered.connect(
                 (lambda f: lambda: self.run_experiment(f))(function))
             experiment_menu.addAction(action)
+        experiment_menu.addSeparator()
         open_split_controller_action = QAction("Open split controls")
+        open_split_controller_action.setToolTip("Open the split controls")
         open_split_controller_action.triggered.connect(
             self.slm_controller.split_control.show)
-        experiment_menu.addSeparator()
         experiment_menu.addAction(open_split_controller_action)
 
     def closeEvent(self, event):

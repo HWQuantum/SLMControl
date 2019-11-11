@@ -304,6 +304,9 @@ def split_square_test(s, coincidence_widget, application):
             ax.imshow(split_data[i, j])
     plt.show()
 
+    s.alice.patterns[2].set_values(old_sq_a)
+    s.bob.patterns[2].set_values(old_sq_b)
+
 
 split_square_test.__menu_name__ = "Split square test"
 split_square_test.__tooltip__ = "Split square test"
