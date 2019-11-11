@@ -291,3 +291,5 @@ def split_square_test(s, coincidence_widget, application):
         for j, ax in enumerate(row):
             ax.imshow(split_data[i, j])
     plt.show()
+split_square_test.__menu_name__ = "Split square test"
+split_square_test.__tooltip__ = "Split square test"
