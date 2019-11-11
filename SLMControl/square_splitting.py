@@ -95,14 +95,14 @@ class SquareSplitController(QWidget):
     """
     def __init__(self):
         super().__init__()
-        self.basis_a = pg.SpinBox(int=True)
-        self.basis_b = pg.SpinBox(int=True)
+        self.basis_a = pg.SpinBox(int=True, step=1)
+        self.basis_b = pg.SpinBox(int=True, step=1)
         self.range_min_a = pg.SpinBox()
         self.range_min_b = pg.SpinBox()
         self.range_max_a = pg.SpinBox()
         self.range_max_b = pg.SpinBox()
-        self.range_n_a = pg.SpinBox(int=True)
-        self.range_n_b = pg.SpinBox(int=True)
+        self.range_n_a = pg.SpinBox(int=True, step=1)
+        self.range_n_b = pg.SpinBox(int=True, step=1)
         self.distance_a = pg.SpinBox()
         self.distance_b = pg.SpinBox()
 
