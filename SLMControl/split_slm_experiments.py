@@ -280,12 +280,20 @@ def split_square_test(s, coincidence_widget, application):
 
     split_data = np.zeros((splits_a, splits_b, 2, 2))
 
+    a_squares = []
+    b_squares = []
+
     for i, alice_split in enumerate(np.linspace(r_min_a, r_max_a, splits_a)):
-        a_s_1, a_s_2 = square_a.split_in_half(not horizontal, distance_a, alice_split)
+        a_s_1, a_s_2 = square_a.split_in_half(not horizontal, distance_a,
+                                              alice_split)
+        a_squares.append((a_s_1, a_s_2))
         s.alice.patterns[2].set_values([[*p.centre, p.size[0], p.size[1]]
                                         for p in [a_s_1, a_s_2]])
         for j, bob_split in enumerate(np.linspace(r_min_b, r_max_b, splits_b)):
-            b_s_1, b_s_2 = square_b.split_in_half(not horizontal, distance_b, bob_split)
+            b_s_1, b_s_2 = square_b.split_in_half(not horizontal, distance_b,
+                                                  bob_split)
+            if j == 0:
+                b_squares.append((b_s_1, b_s_2))
             s.bob.patterns[2].set_values([[*p.centre, p.size[0], p.size[1]]
                                           for p in [b_s_1, b_s_2]])
             for a_i in [0, 1]:
@@ -305,6 +313,13 @@ def split_square_test(s, coincidence_widget, application):
         for j, ax in enumerate(row):
             ax.imshow(split_data[i, j])
     plt.show()
+
+    print("A squares")
+    for i, (sq_a_1, sq_a_2) in enumerate(a_squares):
+        print("{}: {}, {} --- {}, {}".format(i, sq_a_1.centre, sq_a_1.size, sq_a_2.centre, sq_a_2.size))
+    print("B squares")
+    for i, (sq_a_1, sq_a_2) in enumerate(b_squares):
+        print("{}: {}, {} --- {}, {}".format(i, sq_a_1.centre, sq_a_1.size, sq_a_2.centre, sq_a_2.size))
 
     s.alice.patterns[2].set_values(old_sq_a)
     s.bob.patterns[2].set_values(old_sq_b)
