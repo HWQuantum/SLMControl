@@ -129,7 +129,7 @@ class SquareSplitController(QWidget):
         self.layout.addWidget(self.distance_a, 4, 1)
         self.layout.addWidget(QLabel("Distance b"), 4, 2)
         self.layout.addWidget(self.distance_b, 4, 3)
-        self.layout.addWidget(self.horizontal 5, 0, 1, 4)
+        self.layout.addWidget(self.horizontal, 5, 0, 1, 4)
 
         self.setLayout(self.layout)
 
