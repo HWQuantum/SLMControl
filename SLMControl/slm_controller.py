@@ -6,6 +6,7 @@ import json
 
 from pattern import PatternContainer
 from lut_control import LUTWidget
+from square_splitting import SquareSplitController
 
 
 class SLMDisplay():
@@ -310,6 +311,8 @@ class SplitSLMController(QWidget):
         self.main_layout = QHBoxLayout()
         self.pattern_layout = QVBoxLayout()
         self.slm_layout = QGridLayout()
+        self.split_control = SquareSplitController()
+
         self.x, self.y = np.mgrid[-1:1:(slm_size[0] * 1j), -1:1:(slm_size[1] *
                                                                  1j)]
         self.slm_size = slm_size
@@ -358,14 +361,12 @@ class SplitSLMController(QWidget):
         self.main_layout.addItem(self.pattern_layout)
         self.main_layout.addItem(self.slm_layout)
 
-
         self.alice.set_pattern_by_name("Brownie Pattern")
         self.bob.set_pattern_by_name("Brownie Pattern")
 
         self.update_image()
 
         self.setLayout(self.main_layout)
-
 
     def update_image(self, update_alice=True, update_bob=True):
         """Update the image that's displayed on the SLM display and
@@ -455,9 +456,11 @@ class SplitSLMController(QWidget):
         """Return the contained values
         LUT and slm settings
         """
-        return {"lut_list": self.lut_list,
-                "alice": self.alice.get_values(),
-                "bob": self.bob.get_values()}
+        return {
+            "lut_list": self.lut_list,
+            "alice": self.alice.get_values(),
+            "bob": self.bob.get_values()
+        }
 
     def set_values(self, values):
         """Set the values
@@ -548,6 +551,7 @@ class SplitSLMController(QWidget):
     def bob_basis(self, b):
         self.bob.change_vector_widget(0)
         self.bob.vector_mub_control.basis.setValue(b)
+
 
 class MultiSLMController(QWidget):
     '''Controls for entanglement on multiple SLMs

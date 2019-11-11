@@ -248,15 +248,27 @@ def split_square_test(s, coincidence_widget, application):
     histogram_bins = 300  # number of bins for the histogram
     sync_channel = 0  # the channel the values should be compared with
 
-    sq_a = s.alice.patterns[2].get_values()[0]
-    sq_b = s.bob.patterns[2].get_values()[0]
+    old_sq_a = s.alice.patterns[2].get_values()
+    old_sq_b = s.bob.patterns[2].get_values()
 
-    square_a = Rect((sq_a[2], sq_a[3]), (sq_a[0], sq_a[1]), (0.5, 0.5))
-    square_b = Rect((sq_b[2], sq_b[3]), (sq_b[0], sq_b[1]), (0.5, 0.5))
+    b_a = s.split_control.basis_a.value()
+    b_b = s.split_control.basis_b.value()
 
-    distance = 0.1  # the distance between two squares
+    square_a = Rect((old_sq_a[b_a][2], old_sq_a[b_a][3]),
+                    (old_sq_a[b_a][0], old_sq_a[b_a][1]), (0.5, 0.5))
+    square_b = Rect((old_sq_b[b_b][2], old_sq_b[b_b][3]),
+                    (old_sq_b[b_b][0], old_sq_b[b_b][1]), (0.5, 0.5))
 
-    splits = 3
+    distance_a = s.split_control.distance_a.value()
+    distance_b = s.split_control.distance_b.value()
+
+    splits_a = s.split_control.range_n_a.value()
+    splits_b = s.split_control.range_n_b.value()
+
+    r_min_a = s.split_control.range_min_a.value()
+    r_min_b = s.split_control.range_min_b.value()
+    r_max_a = s.split_control.range_max_a.value()
+    r_max_b = s.split_control.range_max_b.value()
 
     s.alice_mub = 0
     s.bob_mub = 0
@@ -264,14 +276,14 @@ def split_square_test(s, coincidence_widget, application):
     s.alice_dimension = 2
     s.bob_dimension = 2
 
-    split_data = np.zeros((splits, splits, 2, 2))
+    split_data = np.zeros((splits_a, splits_b, 2, 2))
 
-    for i, alice_split in enumerate(np.linspace(0.3, 1 - 0.3, splits)):
-        a_s_1, a_s_2 = square_a.split_in_half(0, distance, alice_split)
+    for i, alice_split in enumerate(np.linspace(r_min_a, r_max_a, splits_a)):
+        a_s_1, a_s_2 = square_a.split_in_half(0, distance_a, alice_split)
         s.alice.patterns[2].set_values([[*p.centre, p.size[0], p.size[1]]
                                         for p in [a_s_1, a_s_2]])
-        for j, bob_split in enumerate(np.linspace(0.3, 1 - 0.3, splits)):
-            b_s_1, b_s_2 = square_b.split_in_half(0, distance, bob_split)
+        for j, bob_split in enumerate(np.linspace(r_min_b, r_max_b, splits_b)):
+            b_s_1, b_s_2 = square_b.split_in_half(0, distance_b, bob_split)
             s.bob.patterns[2].set_values([[*p.centre, p.size[0], p.size[1]]
                                           for p in [b_s_1, b_s_2]])
             for a_i in [0, 1]:
@@ -286,10 +298,12 @@ def split_square_test(s, coincidence_widget, application):
                             integration_time, coincidence_window,
                             histogram_bins, sync_channel)[3][3]
 
-    fig, axs = plt.subplots(splits, splits)
+    fig, axs = plt.subplots(splits_a, splits_b)
     for i, row in enumerate(axs):
         for j, ax in enumerate(row):
             ax.imshow(split_data[i, j])
     plt.show()
+
+
 split_square_test.__menu_name__ = "Split square test"
 split_square_test.__tooltip__ = "Split square test"
