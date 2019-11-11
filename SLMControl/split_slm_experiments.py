@@ -270,6 +270,8 @@ def split_square_test(s, coincidence_widget, application):
     r_max_a = s.split_control.range_max_a.value()
     r_max_b = s.split_control.range_max_b.value()
 
+    horizontal = s.split_control.horizontal.isChecked()
+
     s.alice_mub = 0
     s.bob_mub = 0
 
@@ -279,11 +281,11 @@ def split_square_test(s, coincidence_widget, application):
     split_data = np.zeros((splits_a, splits_b, 2, 2))
 
     for i, alice_split in enumerate(np.linspace(r_min_a, r_max_a, splits_a)):
-        a_s_1, a_s_2 = square_a.split_in_half(0, distance_a, alice_split)
+        a_s_1, a_s_2 = square_a.split_in_half(not horizontal, distance_a, alice_split)
         s.alice.patterns[2].set_values([[*p.centre, p.size[0], p.size[1]]
                                         for p in [a_s_1, a_s_2]])
         for j, bob_split in enumerate(np.linspace(r_min_b, r_max_b, splits_b)):
-            b_s_1, b_s_2 = square_b.split_in_half(0, distance_b, bob_split)
+            b_s_1, b_s_2 = square_b.split_in_half(not horizontal, distance_b, bob_split)
             s.bob.patterns[2].set_values([[*p.centre, p.size[0], p.size[1]]
                                           for p in [b_s_1, b_s_2]])
             for a_i in [0, 1]:

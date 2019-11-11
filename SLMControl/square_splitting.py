@@ -1,7 +1,7 @@
 """Utilities to split up some rectangles, and vary them, etc...
 """
 
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QGridLayout, QTableWidget, QLabel
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QGridLayout, QTableWidget, QLabel, QPushButton
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 import pyqtgraph as pg
 
@@ -105,6 +105,8 @@ class SquareSplitController(QWidget):
         self.range_n_b = pg.SpinBox(int=True, step=1)
         self.distance_a = pg.SpinBox()
         self.distance_b = pg.SpinBox()
+        self.horizontal = QPushButton("Split horizontal")
+        self.horizontal.setCheckable(True)
 
         self.layout = QGridLayout()
         self.layout.addWidget(QLabel("Basis A"), 0, 0)
@@ -127,6 +129,7 @@ class SquareSplitController(QWidget):
         self.layout.addWidget(self.distance_a, 4, 1)
         self.layout.addWidget(QLabel("Distance b"), 4, 2)
         self.layout.addWidget(self.distance_b, 4, 3)
+        self.layout.addWidget(self.horizontal 5, 0, 1, 4)
 
         self.setLayout(self.layout)
 
