@@ -314,6 +314,8 @@ def split_square_test(s, coincidence_widget, application):
             ax.imshow(split_data[i, j])
     plt.show()
 
+    np.save("split_data", split_data)
+
     print("A squares")
     for i, (sq_a_1, sq_a_2) in enumerate(a_squares):
         print("{}: {}, {} --- {}, {}".format(i, sq_a_1.centre, sq_a_1.size, sq_a_2.centre, sq_a_2.size))
