@@ -74,3 +74,20 @@ These are both defined by the current dimension selected
 *** SLM Pattern selection
 The individual arguments after X, Y, components are different for each different pattern which is selected.
 These are selected between using a drop-down menu, which changes the different selections.
+
+** Complete redesign of the whole thing
+   A complete redesign of the whole program.
+   Key things to implement:
+
+*** Implement an undo/redo structure
+This could be a tree or just a FIFO stack - use the built in Qt undo thing.
+*** Use pyqtgraph's dockable widget
+This would allow for pulling up different graphs and putting them in different places, etc...
+*** Use the model-view framework for things like pattern controls, etc...
+*** Separate the patterns from the slm views
+    Use two different models:
+- the pattern controllers, which have dimension, basis, etc...
+- the slm controllers which choose where the pattern is displayed on which screen, the diffraction pattern, etc...
+The slm controllers each give a set of coordinates (X, Y) which are then passed to each pattern controller to fetch a pattern to display.
+*** Choose the lookup table per SLM rather than per pattern.
+
