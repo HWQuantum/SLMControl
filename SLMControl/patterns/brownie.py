@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QUndoCommand, QUndoStack, QTableView, QStyledItemDelegate
-from PyQt5.QtCore import QAbstractTableModel, pyqtSignal, pyqtSlot, Qt
+from PyQt5.QtWidgets import QWidget, QUndoCommand, QUndoStack, QTableView, QStyledItemDelegate, QUndoView, QHeaderView
+from PyQt5.QtCore import QAbstractTableModel, pyqtSignal, pyqtSlot, Qt, QModelIndex
 import numpy as np
 import pyqtgraph as pg
 
@@ -15,8 +15,7 @@ class SpinBoxDelegate(QStyledItemDelegate):
         return editor
 
     def setEditorData(self, editor, index):
-        value = index.model().data(index, Qt.EditRole)
-        editor.setValue(value)
+        editor.setValue(index.data())
 
     def setModelData(self, editor, model, index):
         editor.interpretText()
@@ -25,7 +24,83 @@ class SpinBoxDelegate(QStyledItemDelegate):
         model.setData(index, value, Qt.EditRole)
 
     def updateEditorGeometry(self, editor, option, index):
-        editor.setGeometry(option.rect);
+        editor.setGeometry(option.rect)
+
+
+class ChangeValueCommand(QUndoCommand):
+    def __init__(self, index, value, parent):
+        super().__init__()
+        self.row = index.row()
+        self.col = index.column()
+        self.old_val = index.data()
+        self.new_val = value
+        self.setText("Change index ({}, {}) from {} to {}".format(
+            self.row, self.col, self.old_val, self.new_val))
+        self.model = parent
+
+    def redo(self):
+        self.model._data[self.row, self.col] = self.new_val
+        self.model.dataChanged.emit(self.model.index(self.row, self.col),
+                                    self.model.index(self.row, self.col))
+
+    def undo(self):
+        self.model._data[self.row, self.col] = self.old_val
+        self.model.dataChanged.emit(self.model.index(self.row, self.col),
+                                    self.model.index(self.row, self.col))
+
+
+class AddRowsCommand(QUndoCommand):
+    def __init__(self, row, count, parent):
+        super().__init__()
+        self.setText("Add {} rows after index {}".format(count, row))
+        self.row = row
+        self.count = count
+        self.model = parent
+
+    def redo(self):
+        self.model.beginInsertRows(QModelIndex(), self.row,
+                                   self.row + self.count - 1)
+        self.model._data = np.insert(self.model._data,
+                                     self.row,
+                                     np.tile([0, 0, 0, 0, 0, 0],
+                                             (self.count, 1)),
+                                     axis=0)
+        self.model.endInsertRows()
+
+    def undo(self):
+        self.model.beginRemoveRows(QModelIndex(), self.row,
+                                   self.row + self.count - 1)
+        self.model._data = np.delete(self.model._data,
+                                     range(self.row, self.row + self.count),
+                                     axis=0)
+        self.model.endRemoveRows()
+
+
+class RemoveRowsCommand(QUndoCommand):
+    def __init__(self, row, count, parent):
+        super().__init__()
+        self.setText("Remove {} rows after index {}".format(count, row))
+        self.row = row
+        self.count = count
+        self.model = parent
+        self.old_data = self.model._data[row:row + count]
+
+    def redo(self):
+        self.model.beginRemoveRows(QModelIndex(), self.row,
+                                   self.row + self.count - 1)
+        self.model._data = np.delete(self.model._data,
+                                     range(self.row, self.row + self.count),
+                                     axis=0)
+        self.model.endRemoveRows()
+
+    def undo(self):
+        self.model.beginInsertRows(QModelIndex(), self.row,
+                                   self.row + self.count - 1)
+        self.model._data = np.insert(self.model._data,
+                                     self.row,
+                                     self.old_data,
+                                     axis=0)
+        self.model.endInsertRows()
 
 
 class BrownieModel(QAbstractTableModel):
@@ -34,7 +109,8 @@ class BrownieModel(QAbstractTableModel):
 
     def __init__(self, dimension):
         super().__init__()
-        self._data = np.random.random((dimension, 6))
+        self._data = np.zeros((dimension, 6))
+        self.undo_stack = QUndoStack()
 
     def rowCount(self, parent):
         return self._data.shape[0]
@@ -60,10 +136,7 @@ class BrownieModel(QAbstractTableModel):
         if role != Qt.EditRole:
             return False
         else:
-            try:
-                self._data[index.row(), index.column()] = value
-            except ValueError as ve:
-                return False
+            self.undo_stack.push(ChangeValueCommand(index, value, self))
             return True
 
     def flags(self, index):
@@ -81,7 +154,11 @@ if __name__ == "__main__":
     w.setModel(m)
     de = SpinBoxDelegate(w)
     w.setItemDelegate(de)
+    w.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
     w.show()
-
+    v = QUndoView()
+    v.setStack(m.undo_stack)
+    v.show()
+    m.undo_stack.push(RemoveRowsCommand(4, 2, m))
 
     app.exec()
