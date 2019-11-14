@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QUndoCommand, QUndoStack, QTableView, QStyledItemDelegate, QUndoView, QHeaderView
-from PyQt5.QtCore import QAbstractTableModel, pyqtSignal, pyqtSlot, Qt, QModelIndex
+from PyQt5.QtWidgets import QWidget, QUndoCommand, QUndoStack, QTableView, QStyledItemDelegate, QUndoView, QHeaderView, QAbstractItemView, QTableWidget, QLabel, QTableWidgetItem
+from PyQt5.QtCore import QAbstractTableModel, pyqtSignal, pyqtSlot, Qt, QModelIndex, QItemSelectionModel, QItemSelection, QAbstractItemModel
 import numpy as np
 import pyqtgraph as pg
 
@@ -62,8 +62,8 @@ class AddRowsCommand(QUndoCommand):
                                    self.row + self.count - 1)
         self.model._data = np.insert(self.model._data,
                                      self.row,
-                                     np.tile([0, 0, 0, 0, 0, 0],
-                                             (self.count, 1)),
+                                     np.zeros((self.count,
+                                               self.model.columnCount())),
                                      axis=0)
         self.model.endInsertRows()
 
@@ -103,20 +103,21 @@ class RemoveRowsCommand(QUndoCommand):
         self.model.endInsertRows()
 
 
-class BrownieModel(QAbstractTableModel):
-
-    headers = ["Width", "Height", "x", "y", "Rect x", "Rect y"]
-
-    def __init__(self, dimension):
+class ConstantColumnTableModel(QAbstractTableModel):
+    """A class which provides changeable row numbers, but constant column width
+    Data is stored in a numpy array
+    """
+    def __init__(self, initial_rows, headers):
         super().__init__()
-        self._data = np.zeros((dimension, 6))
+        self._data = np.zeros((initial_rows, len(headers)))
         self.undo_stack = QUndoStack()
+        self.headers = headers
 
     def rowCount(self, parent):
         return self._data.shape[0]
 
     def columnCount(self, parent):
-        return 6
+        return len(self.headers)
 
     def headerData(self, section, orientation, role):
         if orientation == Qt.Vertical and role == Qt.DisplayRole:
@@ -140,7 +141,7 @@ class BrownieModel(QAbstractTableModel):
             return True
 
     def flags(self, index):
-        return Qt.ItemIsEditable | Qt.ItemIsEnabled
+        return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
 
 
 if __name__ == "__main__":
@@ -148,10 +149,11 @@ if __name__ == "__main__":
 
     app = QApplication([])
 
-    m = BrownieModel(7)
+    m = ConstantColumnTableModel(100, ["hi", "there"])
 
     w = QTableView()
     w.setModel(m)
+    w.setSelectionMode(QAbstractItemView.ContiguousSelection)
     de = SpinBoxDelegate(w)
     w.setItemDelegate(de)
     w.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
