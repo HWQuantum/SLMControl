@@ -2,17 +2,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numba import njit
 from PyQt5.QtWidgets import QWidget, QLabel, QGridLayout, QPushButton, QComboBox, QGroupBox, QScrollArea, QVBoxLayout, QFormLayout, QTableWidget, QHeaderView
-from PyQt5.QtCore import pyqtSignal, pyqtSlot
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QModelIndex
 from PyQt5 import QtCore
 import pyqtgraph as pg
 
 from zernike_controls import ZernikeSet
+from patterns.constant_column_table import ConstantColumnTableModel, ConstantColumnTableView, SpinBoxDelegate
+from square_splitting import Rect
 
 
-def point_in_square(px, py, sx, sy, w, h):
+def point_in_square(px, py, w, h, x, y, ax, ay):
     """Check if the point (px, py) is inside the square defined by
     the centre (sx, sy) and width and height (w, h)
     """
+    r = Rect((w, h), (x, y), (ax, ay))
+    sx, sy = r.centre
     lx = sx - w / 2
     rx = sx + w / 2
     ty = sy + h / 2
@@ -213,7 +217,7 @@ class OAMPattern(QWidget):
         pass
 
 
-class BrowniePattern(QTableWidget):
+class BrowniePattern(ConstantColumnTableView):
     """BrowniePattern gives the controls for a set of shapes
     """
 
@@ -222,82 +226,46 @@ class BrowniePattern(QTableWidget):
 
     def __init__(self, dim):
         super().__init__()
-        self.setColumnCount(4)
-        self.setHorizontalHeaderLabels(["x", "y", "width", "height"])
+        self._model = ConstantColumnTableModel(
+            dim, ["width", "height", "x", "y", "a_x", "a_y"])
+        self._delegate = SpinBoxDelegate(self)
+        self.setModel(self._model)
+        self.setItemDelegate(self._delegate)
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-    @pyqtSlot()
-    def add_row(self, row_data=[0, 0, 0, 0]):
-        """Add a row, optionally giving the data to be added
-        """
-        new_row_index = self.rowCount()
-        self.insertRow(new_row_index)
-        x = pg.SpinBox(value=row_data[0])
-        y = pg.SpinBox(value=row_data[1])
-        w = pg.SpinBox(value=row_data[2])
-        h = pg.SpinBox(value=row_data[3])
-        x.sigValueChanged.connect(self.value_changed.emit)
-        y.sigValueChanged.connect(self.value_changed.emit)
-        w.sigValueChanged.connect(self.value_changed.emit)
-        h.sigValueChanged.connect(self.value_changed.emit)
-        self.setCellWidget(new_row_index, 0, x)
-        self.setCellWidget(new_row_index, 1, y)
-        self.setCellWidget(new_row_index, 2, w)
-        self.setCellWidget(new_row_index, 3, h)
-
-    @pyqtSlot()
-    def remove_row(self, index=None):
-        """Remove a row. If index is None, remove the last row
-        otherwise remove at the index
-        """
-        if index is None:
-            self.removeRow(self.rowCount() - 1)
-
-        else:
-            self.removeRow(index)
-
     def get_values(self):
         """Return the contained values in a list of lists [[x, y, w, h]]
         """
-        return [[
-            self.cellWidget(row, col).value()
-            for col in range(self.columnCount())
-        ] for row in range(self.rowCount())]
+        return self._model._data
 
     def set_dimension(self, d):
         """Set the dimension of the table.
         Removes widgets from the end if too large
         Adds widgets to the end if too small.
         """
-        row_count = self.rowCount()
+        row_count = self.model().rowCount(QModelIndex())
         if d == row_count:
             return
         elif d > row_count:
             for _ in range(d - row_count):
-                self.add_row()
+                self.model().insertRows(row_count, d - row_count)
         else:
-            for _ in range(row_count - d):
-                self.remove_row()
+            self.model().removeRows(d+1, row_count - d)
 
     def set_values(self, values):
         """Set the values from a list of lists [[x, y, w, h]]
         """
-        row_count = self.rowCount()
+        row_count = self.model().rowCount(QModelIndex())
         d = len(values)
 
-        if d < row_count:
-            for _ in range(row_count - d):
-                self.remove_row()
-            row_count = d
+        self.set_dimension(d)
 
-        elif d > row_count:
-            for row in values[row_count:]:
-                self.add_row(row)
         for i, row in enumerate(values[:row_count]):
             for j, col in enumerate(row):
-                self.cellWidget(i, j).setValue(col)
+                index = QModelIndex(i, j)
+                self.model().setData(index, col)
 
     def get_pattern(self, X, Y, components):
         pixels = self.get_values()

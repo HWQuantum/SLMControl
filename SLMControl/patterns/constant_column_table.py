@@ -66,7 +66,7 @@ class AddRowsCommand(QUndoCommand):
         self.model._data = np.insert(self.model._data,
                                      self.row,
                                      np.zeros((self.count,
-                                               self.model.columnCount())),
+                                               self.model.columnCount(QModelIndex()))),
                                      axis=0)
         self.model.endInsertRows()
 
@@ -149,12 +149,21 @@ class ConstantColumnTableModel(QAbstractTableModel):
     def flags(self, index):
         return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
 
+    def insertRows(self, row, count, parent=QModelIndex()):
+        self.undo_stack.push(AddRowsCommand(row, count, self))
+        return True
+
+    def removeRows(self, row, count, parent=QModelIndex()):
+        self.undo_stack.push(RemoveRowsCommand(row, count, self))
+        return True
+
 
 class ConstantColumnTableView(QTableView):
     """A table view which allows for copying and pasting data
     """
     def __init__(self):
         super().__init__()
+        self.setSelectionMode(QAbstractItemView.ContiguousSelection)
 
     def copySelection(self):
         """Copy the selected cells, separating columns
@@ -225,7 +234,6 @@ if __name__ == "__main__":
 
     w = ConstantColumnTableView()
     w.setModel(m)
-    w.setSelectionMode(QAbstractItemView.ContiguousSelection)
     de = SpinBoxDelegate(w)
     w.setItemDelegate(de)
     w.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -234,6 +242,7 @@ if __name__ == "__main__":
     v = QUndoView()
     v.setStack(m.undo_stack)
     v.show()
-    m.undo_stack.push(RemoveRowsCommand(4, 2, m))
+    m.insertRows(0, 100, QModelIndex())
+    m.removeRows(0, 10000, QModelIndex())
 
     app.exec()
