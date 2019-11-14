@@ -140,7 +140,10 @@ class ConstantColumnTableModel(QAbstractTableModel):
         if role != Qt.EditRole:
             return False
         else:
-            self.undo_stack.push(ChangeValueCommand(index, value, self))
+            try:
+                self.undo_stack.push(ChangeValueCommand(index, float(value), self))
+            except ValueError as e:
+                return False
             return True
 
     def flags(self, index):
