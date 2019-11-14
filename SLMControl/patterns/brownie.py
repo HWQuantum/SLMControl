@@ -169,8 +169,20 @@ class ConstantColumnTableView(QTableView):
                 column = index.column() - columns[0]
                 table[row][column] = index.data()
             stream = io.StringIO()
-            csv.writer(stream).writerows(table)
+            csv.writer(stream, delimiter='\t').writerows(table)
             qApp.clipboard().setText(stream.getvalue())
+
+    def keyPressEvent(self, event):
+        if event.matches(QtGui.QKeySequence.Copy):
+            self.copySelection()
+        elif event.matches(QtGui.QKeySequence.Paste):
+            self.pasteSelection()
+        elif event.matches(QtGui.QKeySequence.Undo):
+            self.model().undo_stack.undo()
+        elif event.matches(QtGui.QKeySequence.Redo):
+            self.model().undo_stack.redo()
+        else:
+            super().keyPressEvent(event)
 
     def pasteSelection(self):
         selection = self.selectedIndexes()
@@ -182,17 +194,23 @@ class ConstantColumnTableView(QTableView):
             columns = sorted(index.column() for index in selection)
             reader = csv.reader(io.StringIO(buffer), delimiter='\t')
             if len(rows) == 1 and len(columns) == 1:
+                # only one cell is selected
                 for i, line in enumerate(reader):
                     for j, cell in enumerate(line):
-                        model.setData(model.index(rows[0] + i, columns[0] + j),
-                                      cell)
+                        index = model.index(rows[0] + i, columns[0] + j)
+                        if index.isValid():
+                            model.setData(
+                                model.index(rows[0] + i, columns[0] + j), cell,
+                                Qt.EditRole)
             else:
+                # more than one cell is selected
                 arr = [[cell for cell in row] for row in reader]
                 for index in selection:
                     row = index.row() - rows[0]
                     column = index.column() - columns[0]
-                    model.setData(model.index(index.row(), index.column()),
-                                  arr[row][column])
+                    if row < len(arr) and column < len(arr[0]):
+                        model.setData(model.index(index.row(), index.column()),
+                                      arr[row][column], Qt.EditRole)
 
 
 if __name__ == "__main__":
@@ -200,7 +218,7 @@ if __name__ == "__main__":
 
     app = QApplication([])
 
-    m = ConstantColumnTableModel(100, ["hi", "there"])
+    m = ConstantColumnTableModel(100, ["hi", "there", "wow"])
 
     w = ConstantColumnTableView()
     w.setModel(m)
@@ -210,12 +228,6 @@ if __name__ == "__main__":
     w.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
     w.show()
     from PyQt5.QtWidgets import QPushButton
-    b = QPushButton("copy")
-    b.show()
-    b.clicked.connect(w.copySelection)
-    p = QPushButton("paste")
-    p.show()
-    p.clicked.connect(w.pasteSelection)
     v = QUndoView()
     v.setStack(m.undo_stack)
     v.show()
