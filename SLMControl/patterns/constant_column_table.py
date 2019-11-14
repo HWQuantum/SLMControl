@@ -242,7 +242,5 @@ if __name__ == "__main__":
     v = QUndoView()
     v.setStack(m.undo_stack)
     v.show()
-    m.insertRows(0, 100, QModelIndex())
-    m.removeRows(0, 10000, QModelIndex())
 
     app.exec()
