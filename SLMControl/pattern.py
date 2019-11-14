@@ -228,6 +228,7 @@ class BrowniePattern(ConstantColumnTableView):
         super().__init__()
         self._model = ConstantColumnTableModel(
             dim, ["width", "height", "x", "y", "a_x", "a_y"])
+        self._model.dataChanged.connect(self.value_changed.emit)
         self._delegate = SpinBoxDelegate(self)
         self.setModel(self._model)
         self.setItemDelegate(self._delegate)
@@ -249,10 +250,9 @@ class BrowniePattern(ConstantColumnTableView):
         if d == row_count:
             return
         elif d > row_count:
-            for _ in range(d - row_count):
-                self.model().insertRows(row_count, d - row_count)
+            self.model().insertRows(row_count, d - row_count)
         else:
-            self.model().removeRows(d+1, row_count - d)
+            self.model().removeRows(d, row_count - d)
 
     def set_values(self, values):
         """Set the values from a list of lists [[x, y, w, h]]
