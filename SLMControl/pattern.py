@@ -264,8 +264,8 @@ class BrowniePattern(ConstantColumnTableView):
 
         for i, row in enumerate(values[:row_count]):
             for j, col in enumerate(row):
-                index = QModelIndex(i, j)
-                self.model().setData(index, col)
+                index = self.model().createIndex(i, j)
+                self.model().setData(index, col, QtCore.Qt.EditRole)
 
     def get_pattern(self, X, Y, components):
         pixels = self.get_values()
