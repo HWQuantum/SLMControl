@@ -39,7 +39,7 @@ class ExperimentController(QMainWindow):
         self.setCentralWidget(self.internal_widget)
 
         self.create_menus()
-        self.load_values_from_default()
+        # self.load_values_from_default()
 
     def create_menus(self):
         save_defaults_action = QAction("Save new defaults", self)
