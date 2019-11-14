@@ -1,7 +1,10 @@
-from PyQt5.QtWidgets import QWidget, QUndoCommand, QUndoStack, QTableView, QStyledItemDelegate, QUndoView, QHeaderView, QAbstractItemView, QTableWidget, QLabel, QTableWidgetItem
+from PyQt5.QtWidgets import QWidget, QUndoCommand, QUndoStack, QTableView, QStyledItemDelegate, QUndoView, QHeaderView, QAbstractItemView, QTableWidget, QLabel, QTableWidgetItem, qApp
+from PyQt5 import QtGui
 from PyQt5.QtCore import QAbstractTableModel, pyqtSignal, pyqtSlot, Qt, QModelIndex, QItemSelectionModel, QItemSelection, QAbstractItemModel
 import numpy as np
 import pyqtgraph as pg
+import io
+import csv
 
 
 class SpinBoxDelegate(QStyledItemDelegate):
@@ -144,6 +147,54 @@ class ConstantColumnTableModel(QAbstractTableModel):
         return QAbstractItemModel.flags(self, index) | Qt.ItemIsEditable
 
 
+class ConstantColumnTableView(QTableView):
+    """A table view which allows for copying and pasting data
+    """
+    def __init__(self):
+        super().__init__()
+
+    def copySelection(self):
+        """Copy the selected cells, separating columns
+        by tabs and rows by newlines
+        """
+        selection = self.selectedIndexes()
+        if selection:
+            rows = sorted(index.row() for index in selection)
+            columns = sorted(index.column() for index in selection)
+            rowcount = rows[-1] - rows[0] + 1
+            colcount = columns[-1] - columns[0] + 1
+            table = [[''] * colcount for _ in range(rowcount)]
+            for index in selection:
+                row = index.row() - rows[0]
+                column = index.column() - columns[0]
+                table[row][column] = index.data()
+            stream = io.StringIO()
+            csv.writer(stream).writerows(table)
+            qApp.clipboard().setText(stream.getvalue())
+
+    def pasteSelection(self):
+        selection = self.selectedIndexes()
+        if selection:
+            model = self.model()
+
+            buffer = qApp.clipboard().text()
+            rows = sorted(index.row() for index in selection)
+            columns = sorted(index.column() for index in selection)
+            reader = csv.reader(io.StringIO(buffer), delimiter='\t')
+            if len(rows) == 1 and len(columns) == 1:
+                for i, line in enumerate(reader):
+                    for j, cell in enumerate(line):
+                        model.setData(model.index(rows[0] + i, columns[0] + j),
+                                      cell)
+            else:
+                arr = [[cell for cell in row] for row in reader]
+                for index in selection:
+                    row = index.row() - rows[0]
+                    column = index.column() - columns[0]
+                    model.setData(model.index(index.row(), index.column()),
+                                  arr[row][column])
+
+
 if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
 
@@ -151,13 +202,20 @@ if __name__ == "__main__":
 
     m = ConstantColumnTableModel(100, ["hi", "there"])
 
-    w = QTableView()
+    w = ConstantColumnTableView()
     w.setModel(m)
     w.setSelectionMode(QAbstractItemView.ContiguousSelection)
     de = SpinBoxDelegate(w)
     w.setItemDelegate(de)
     w.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
     w.show()
+    from PyQt5.QtWidgets import QPushButton
+    b = QPushButton("copy")
+    b.show()
+    b.clicked.connect(w.copySelection)
+    p = QPushButton("paste")
+    p.show()
+    p.clicked.connect(w.pasteSelection)
     v = QUndoView()
     v.setStack(m.undo_stack)
     v.show()
