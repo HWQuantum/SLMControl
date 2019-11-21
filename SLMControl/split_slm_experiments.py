@@ -94,6 +94,62 @@ coincidence_measurement.__menu_name__ = "Coincidence measurement"
 coincidence_measurement.__tooltip__ = "Take the whole coincidence matrix in the given MUB"
 
 
+def multi_pos_coincidence_measurement(s, coincidence_widget, application):
+    measurement_receiver = MeasurementReceiver()
+    integration_time = coincidence_widget.device_measurement.measurement_time.value(
+    )  # integration time in ms
+    coincidence_window = 6000  # coincidence window in ps
+    histogram_bins = 300  # number of bins for the histogram
+    sync_channel = 0  # the channel the values should be compared with
+    dim = s.alice_dimension
+    mub = s.alice_mub
+
+    a_x, a_y = s.alice.position.get_values()
+    b_x, b_y = s.bob.position.get_values()
+
+    num_pos = 3
+
+    pos_range = np.linspace(-0.012, 0.012, num_pos)
+
+    s.alice_dimension = dim
+    s.bob_dimension = dim
+    s.alice_mub = mub
+    s.bob_mub = mub
+
+    coincidences = np.zeros((num_pos, num_pos, dim, dim))
+
+    for i, p_x in enumerate(pos_range):
+        for j, p_y in enumerate(pos_range):
+            s.alice.position.set_values((a_x + p_x, a_y + p_y))
+            s.bob.position.set_values((b_x + p_x, b_y + p_y))
+            for a in range(dim):
+                s.alice_basis = a
+                for b in range(dim):
+                    s.bob_basis = b
+                    application.processEvents()
+                    sleep(0.2)
+                    coincidences[
+                        i, j, a,
+                        b] = coincidence_widget.measurement_thread.run_measurement_once(
+                            integration_time, coincidence_window,
+                            histogram_bins, sync_channel)[3][3]
+
+    measurement_receiver.set_key('coincidence_data')
+    measurement_receiver.add_data(coincidences)
+
+    fig, axs = plt.subplots(num_pos, num_pos)
+    for i, row in enumerate(axs):
+        for j, ax in enumerate(row):
+            ax.imshow(coincidences[i, j])
+    plt.show()
+
+    return measurement_receiver
+
+
+multi_pos_coincidence_measurement.__menu_name__ = "Multi Pos coincidence measurement"
+multi_pos_coincidence_measurement.__tooltip__ = "Take the whole coincidence matrix at multiple positions in the given MUB"
+
+
 def all_mub_coincidence_measurement(s, coincidence_widget, application):
     """Measure the coincidence matrix in all mubs
     """
@@ -318,10 +374,12 @@ def split_square_test(s, coincidence_widget, application):
 
     print("A squares")
     for i, (sq_a_1, sq_a_2) in enumerate(a_squares):
-        print("{}: {}, {} --- {}, {}".format(i, sq_a_1.centre, sq_a_1.size, sq_a_2.centre, sq_a_2.size))
+        print("{}: {}, {} --- {}, {}".format(i, sq_a_1.centre, sq_a_1.size,
+                                             sq_a_2.centre, sq_a_2.size))
     print("B squares")
     for i, (sq_a_1, sq_a_2) in enumerate(b_squares):
-        print("{}: {}, {} --- {}, {}".format(i, sq_a_1.centre, sq_a_1.size, sq_a_2.centre, sq_a_2.size))
+        print("{}: {}, {} --- {}, {}".format(i, sq_a_1.centre, sq_a_1.size,
+                                             sq_a_2.centre, sq_a_2.size))
 
     s.alice.patterns[2].set_values(old_sq_a)
     s.bob.patterns[2].set_values(old_sq_b)
