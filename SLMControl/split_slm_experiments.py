@@ -410,6 +410,8 @@ def weekend_measurement(s, coinc_wid, app):
             mub_range = [0, 1]
             dim_data = np.zeros((2, d, d))
         # Then d is prime, and we should do all mubs
+        s.alice_dimension = d
+        s.bob_dimension = d
         for mub in mub_range:
             if mub < 2:
                 # then it's a comp or fourier mub, we can just apply to both
