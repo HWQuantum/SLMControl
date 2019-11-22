@@ -387,3 +387,62 @@ def split_square_test(s, coincidence_widget, application):
 
 split_square_test.__menu_name__ = "Split square test"
 split_square_test.__tooltip__ = "Split square test"
+
+
+def weekend_measurement(s, coinc_wid, app):
+    """The basis should be defined in 7 dim - this function will reduce the dimension as it progresses
+    """
+    comp_mub_integration_time = 30000
+    other_integration_time = 10000
+    sleep_time = 5
+    coincidence_window = 6000  # coincidence window in ps
+    histogram_bins = 300  # number of bins for the histogram
+    sync_channel = 0  # the channel the values should be compared with
+
+    original_data_a = s.alice.patterns[2].get_values()
+    original_data_b = s.bob.patterns[2].get_values()
+
+    for d in np.arange(7, 1, -1):
+        if (d % 2) != 0:
+            mub_range = range(d + 1)
+            dim_data = np.zeros((d + 1, d, d))
+        else:
+            mub_range = [0, 1]
+            dim_data = np.zeros((2, d, d))
+        # Then d is prime, and we should do all mubs
+        for mub in mub_range:
+            if mub < 2:
+                # then it's a comp or fourier mub, we can just apply to both
+                alice_mub = mub
+                bob_mub = mub
+            else:
+                alice_mub = mub
+                bob_mub = (d + 2) - mub
+            s.alice_mub = alice_mub
+            s.bob_mub = bob_mub
+            for a_basis in range(d):
+                s.alice_basis = a_basis
+                for b_basis in range(d):
+                    s.bob_basis = b_basis
+                    app.processEvents()
+                    sleep(sleep_time)
+                    if mub == 0:
+                        dim_data[
+                            mub, a_basis,
+                            b_basis] = coinc_wid.measurement_thread.run_measurement_once(
+                                comp_mub_integration_time, coincidence_window,
+                                histogram_bins, sync_channel)[3][3]
+                    else:
+                        dim_data[
+                            mub, a_basis,
+                            b_basis] = coinc_wid.measurement_thread.run_measurement_once(
+                                other_integration_time, coincidence_window,
+                                histogram_bins, sync_channel)[3][3]
+        np.save("weekend_run_data_dim_{}".format(d)
+
+    s.alice.patterns[2].set_values(original_data_a)
+    s.bob.patterns[2].set_values(original_data_b)
+
+
+weekend_measurement.__menu_name__ = "Weekend Measurement"
+weekend_measurement.__tooltip__ = "Weekend Measurement"
