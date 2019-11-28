@@ -3,9 +3,11 @@ import matplotlib.pyplot as plt
 from time import sleep
 from square_splitting import Rect
 import pickle
+import time
 
 from experiments import MeasurementReceiver
 
+SLEEP_TIME = 5 # sleeping time in seconds
 
 def diagonal_measurement(s, coincidence_widget, application):
     '''Scan over multiple positions and take the standard deviation of the diagonal to measure the flatness of the state
@@ -30,7 +32,7 @@ def diagonal_measurement(s, coincidence_widget, application):
         s.alice_basis = b
         s.bob_basis = b
         application.processEvents()
-        sleep(0.2)
+        sleep(SLEEP_TIME)
 
         diagonal[
             b] = coincidence_widget.measurement_thread.run_measurement_once(
@@ -52,6 +54,15 @@ diagonal_measurement.__tooltip__ = "Take a diagonal measurement in the given MUB
 
 
 def coincidence_measurement(s, coincidence_widget, application):
+    
+    def QC(rho):
+        """Calculate the quantum contrast from the diagonals 
+        of a coincidence matrix
+        """
+        off_diag_avg = (rho.sum() - rho.diagonal().sum()) / (rho.shape[0] *
+                                                            (rho.shape[1] - 1))
+        return np.average(rho.diagonal()) / off_diag_avg
+
     measurement_receiver = MeasurementReceiver()
     integration_time = coincidence_widget.device_measurement.measurement_time.value(
     )  # integration time in ms
@@ -73,7 +84,7 @@ def coincidence_measurement(s, coincidence_widget, application):
         for b in range(dim):
             s.bob_basis = b
             application.processEvents()
-            sleep(0.2)
+            sleep(SLEEP_TIME)
             coincidences[
                 a,
                 b] = coincidence_widget.measurement_thread.run_measurement_once(
@@ -83,6 +94,7 @@ def coincidence_measurement(s, coincidence_widget, application):
     measurement_receiver.set_key('coincidence_data')
     measurement_receiver.add_data(coincidences)
 
+    np.savetxt("last_measurement_{}".format(time.strftime("%Y_%m_%d-%H_%M_%S")), coincidences, fmt="%.1f", footer="QC = {}".format(QC(coincidences)))
     fig, axs = plt.subplots(1, 1)
     axs.imshow(coincidences)
     plt.show()
@@ -213,11 +225,11 @@ def every_single_mub_coincidence_measurement(s, coincidence_widget,
     s.alice_dimension = dim
     s.bob_dimension = dim
 
-    coincidences = np.zeros((dim + 1, dim + 1, dim, dim))
+    coincidences = np.zeros((dim, dim, dim, dim))
 
-    for mub_a in range(dim + 1):
+    for mub_a in range(1, dim + 1):
         s.alice_mub = mub_a
-        for mub_b in range(dim + 1):
+        for mub_b in range(1, dim + 1):
             s.bob_mub = mub_b
             for a in range(dim):
                 s.alice_basis = a
@@ -226,7 +238,7 @@ def every_single_mub_coincidence_measurement(s, coincidence_widget,
                     application.processEvents()
                     sleep(0.15)
                     coincidences[
-                        mub_a, mub_b, a,
+                        mub_a-1, mub_b-1, a,
                         b] = coincidence_widget.measurement_thread.run_measurement_once(
                             integration_time, coincidence_window,
                             histogram_bins, sync_channel)[3][3]
@@ -392,9 +404,9 @@ split_square_test.__tooltip__ = "Split square test"
 def weekend_measurement(s, coinc_wid, app):
     """The basis should be defined in 7 dim - this function will reduce the dimension as it progresses
     """
-    comp_mub_integration_time = 30000
-    other_integration_time = 10000
-    sleep_time = 5
+    comp_mub_integration_time = 300000
+    other_integration_time = 80000
+    sleep_time = 2
     coincidence_window = 6000  # coincidence window in ps
     histogram_bins = 300  # number of bins for the histogram
     sync_channel = 0  # the channel the values should be compared with
@@ -440,7 +452,7 @@ def weekend_measurement(s, coinc_wid, app):
                             b_basis] = coinc_wid.measurement_thread.run_measurement_once(
                                 other_integration_time, coincidence_window,
                                 histogram_bins, sync_channel)[3][3]
-        np.save("weekend_run_data_dim_{}".format(d)
+        np.save("weekend_run_data_dim_{}".format(d), dim_data)
 
     s.alice.patterns[2].set_values(original_data_a)
     s.bob.patterns[2].set_values(original_data_b)
