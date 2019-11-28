@@ -7,7 +7,8 @@ import time
 
 from experiments import MeasurementReceiver
 
-SLEEP_TIME = 1 # sleeping time in seconds
+SLEEP_TIME = 1  # sleeping time in seconds
+
 
 def diagonal_measurement(s, coincidence_widget, application):
     '''Scan over multiple positions and take the standard deviation of the diagonal to measure the flatness of the state
@@ -54,13 +55,13 @@ diagonal_measurement.__tooltip__ = "Take a diagonal measurement in the given MUB
 
 
 def coincidence_measurement(s, coincidence_widget, application):
-    
     def QC(rho):
         """Calculate the quantum contrast from the diagonals 
         of a coincidence matrix
         """
-        off_diag_avg = (rho.sum() - rho.diagonal().sum()) / (rho.shape[0] *
-                                                            (rho.shape[1] - 1))
+        off_diag_avg = (rho.sum() -
+                        rho.diagonal().sum()) / (rho.shape[0] *
+                                                 (rho.shape[1] - 1))
         return np.average(rho.diagonal()) / off_diag_avg
 
     measurement_receiver = MeasurementReceiver()
@@ -94,7 +95,11 @@ def coincidence_measurement(s, coincidence_widget, application):
     measurement_receiver.set_key('coincidence_data')
     measurement_receiver.add_data(coincidences)
 
-    np.savetxt("last_measurement_{}".format(time.strftime("%Y_%m_%d-%H_%M_%S")), coincidences, fmt="%.1f", footer="QC = {}".format(QC(coincidences)))
+    np.savetxt("last_measurement_{}".format(
+        time.strftime("%Y_%m_%d-%H_%M_%S")),
+               coincidences,
+               fmt="%.1f",
+               footer="QC = {}".format(QC(coincidences)))
     fig, axs = plt.subplots(1, 1)
     axs.imshow(coincidences)
     plt.show()
@@ -238,7 +243,7 @@ def every_single_mub_coincidence_measurement(s, coincidence_widget,
                     application.processEvents()
                     sleep(0.15)
                     coincidences[
-                        mub_a-1, mub_b-1, a,
+                        mub_a - 1, mub_b - 1, a,
                         b] = coincidence_widget.measurement_thread.run_measurement_once(
                             integration_time, coincidence_window,
                             histogram_bins, sync_channel)[3][3]
@@ -460,3 +465,57 @@ def weekend_measurement(s, coinc_wid, app):
 
 weekend_measurement.__menu_name__ = "Weekend Measurement"
 weekend_measurement.__tooltip__ = "Weekend Measurement"
+
+
+def all_mub_brownie_measurement(s, coinc_wid, app):
+    comp_mub_integration_time = 50000
+    other_integration_time = 10000
+    coincidence_window = 6000  # coincidence window in ps
+    histogram_bins = 300  # number of bins for the histogram
+    sync_channel = 0  # the channel the values should be compared with
+
+    d = s.alice_dimension
+
+    if (d % 2) != 0:
+        mub_range = range(d + 1)
+        dim_data = np.zeros((d + 1, d, d))
+    else:
+        mub_range = [0, 1]
+        dim_data = np.zeros((2, d, d))
+    # Then d is prime, and we should do all mubs
+    s.alice_dimension = d
+    s.bob_dimension = d
+    for mub in mub_range:
+        if mub < 2:
+            # then it's a comp or fourier mub, we can just apply to both
+            alice_mub = mub
+            bob_mub = mub
+        else:
+            alice_mub = mub
+            bob_mub = (d + 2) - mub
+        s.alice_mub = alice_mub
+        s.bob_mub = bob_mub
+        for a_basis in range(d):
+            s.alice_basis = a_basis
+            for b_basis in range(d):
+                s.bob_basis = b_basis
+                app.processEvents()
+                sleep(SLEEP_TIME)
+                if mub == 0:
+                    dim_data[
+                        mub, a_basis,
+                        b_basis] = coinc_wid.measurement_thread.run_measurement_once(
+                            comp_mub_integration_time, coincidence_window,
+                            histogram_bins, sync_channel)[3][3]
+                else:
+                    dim_data[
+                        mub, a_basis,
+                        b_basis] = coinc_wid.measurement_thread.run_measurement_once(
+                            other_integration_time, coincidence_window,
+                            histogram_bins, sync_channel)[3][3]
+    np.save("all_mub_d_{}_{}".format(d, time.strftime("%Y_%m_%d-%H_%M_%S")),
+            dim_data)
+
+
+all_mub_brownie_measurement.__menu_name__ = "All MUB Brownie Measurement"
+all_mub_brownie_measurement.__tooltip__ = "All MUB Brownie Measurement"
