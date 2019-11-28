@@ -7,7 +7,7 @@ import time
 
 from experiments import MeasurementReceiver
 
-SLEEP_TIME = 5 # sleeping time in seconds
+SLEEP_TIME = 1 # sleeping time in seconds
 
 def diagonal_measurement(s, coincidence_widget, application):
     '''Scan over multiple positions and take the standard deviation of the diagonal to measure the flatness of the state
