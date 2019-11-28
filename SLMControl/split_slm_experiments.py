@@ -69,7 +69,7 @@ def coincidence_measurement(s, coincidence_widget, application):
         """Calculate the quantum contrast from the diagonals 
         of a coincidence matrix
         """
-        if dim == 0:
+        if mub == 0:
             rho = input_rho
         else:
             rho = np.flip((np.roll(input_rho, -1, axis=1)), axis=1)
