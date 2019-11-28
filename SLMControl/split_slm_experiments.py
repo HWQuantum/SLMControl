@@ -55,14 +55,6 @@ diagonal_measurement.__tooltip__ = "Take a diagonal measurement in the given MUB
 
 
 def coincidence_measurement(s, coincidence_widget, application):
-    def QC(rho):
-        """Calculate the quantum contrast from the diagonals 
-        of a coincidence matrix
-        """
-        off_diag_avg = (rho.sum() -
-                        rho.diagonal().sum()) / (rho.shape[0] *
-                                                 (rho.shape[1] - 1))
-        return np.average(rho.diagonal()) / off_diag_avg
 
     measurement_receiver = MeasurementReceiver()
     integration_time = coincidence_widget.device_measurement.measurement_time.value(
@@ -72,6 +64,20 @@ def coincidence_measurement(s, coincidence_widget, application):
     sync_channel = 0  # the channel the values should be compared with
     dim = s.alice_dimension
     mub = s.alice_mub
+
+    def QC(input_rho):
+        """Calculate the quantum contrast from the diagonals 
+        of a coincidence matrix
+        """
+        if dim == 0:
+            rho = input_rho
+        else:
+            rho = np.flip((np.roll(input_rho, -1, axis=1)), axis=1)
+
+        off_diag_avg = (rho.sum() -
+                        rho.diagonal().sum()) / (rho.shape[0] *
+                                                 (rho.shape[1] - 1))
+        return np.average(rho.diagonal()) / off_diag_avg
 
     s.alice_dimension = dim
     s.bob_dimension = dim
