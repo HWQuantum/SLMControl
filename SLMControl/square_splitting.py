@@ -14,10 +14,38 @@ class Rect:
     (rx, ry) refers to the point on the square that is located at that point. These are in square-coords, ranging from (0, 1).
     To transform from square coords to spatial coordinates, just multiply by width and height.
     """
-    def __init__(self, size, anchor_space, anchor_rect):
+    def __init__(self, size=(1, 1), anchor_space=(0, 0), anchor_rect=(0, 0)):
         self.size = size
         self.anchor_space = anchor_space
         self.anchor_rect = anchor_rect
+
+    def __getitem__(self, index):
+        if index == 0:
+            return self.size[0]
+        elif index == 1:
+            return self.size[1]
+        elif index == 2:
+            return self.anchor_space[0]
+        elif index == 3:
+            return self.anchor_space[1]
+        elif index == 4:
+            return self.anchor_rect[0]
+        elif index == 5:
+            return self.anchor_rect[1]
+
+    def __setitem__(self, index, value):
+        if index == 0:
+            self.size = (value, self.size[1])
+        elif index == 1:
+            self.size = (self.size[0], value)
+        elif index == 2:
+            self.anchor_space = (value, self.anchor_space[1])
+        elif index == 3:
+            self.anchor_space = (self.anchor_space[0], value)
+        elif index == 4:
+            self.anchor_rect = (value, self.anchor_rect[1])
+        elif index == 5:
+            self.anchor_rect = (self.anchor_rect[0], value)
 
     def split_in_half(self, axis, distance=0, split_point=0.5):
         """Split in half along an axis. axis={0, 1} - horizontal or vertical
