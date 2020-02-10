@@ -11,6 +11,7 @@ from patterns.constant_column_table import ConstantColumnTableModel, ConstantCol
 from square_splitting import Rect
 
 
+
 def point_in_square(px, py, w, h, x, y, ax, ay):
     """Check if the point (px, py) is inside the square defined by
     the centre (sx, sy) and width and height (w, h)
