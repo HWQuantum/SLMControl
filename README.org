@@ -90,4 +90,7 @@ This would allow for pulling up different graphs and putting them in different p
 - the slm controllers which choose where the pattern is displayed on which screen, the diffraction pattern, etc...
 The slm controllers each give a set of coordinates (X, Y) which are then passed to each pattern controller to fetch a pattern to display.
 *** Choose the lookup table per SLM rather than per pattern.
-
+*** Use a qt state machine to keep track of the experiment, rather than waiting on the SLM
+    Using the qt state machine would make it easier to keep track of which measurement was
+    running currently...
+*** Each measurement should have a settings page to change the settings before it runs
