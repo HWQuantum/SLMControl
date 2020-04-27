@@ -94,3 +94,10 @@ The slm controllers each give a set of coordinates (X, Y) which are then passed 
     Using the qt state machine would make it easier to keep track of which measurement was
     running currently...
 *** Each measurement should have a settings page to change the settings before it runs
+*** Components needed:
+**** A system for measuring values, with settings and some flexibility in what it measures
+**** A system for adding together different values to view on an SLM
+**** A system for displaying images on an SLM
+**** Widgets for creating different values to display on the SLM
+**** A system for saving state of the program
+**** A system for measuring the state of the values
