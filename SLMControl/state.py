@@ -72,7 +72,7 @@ def is_pattern_reference(v):
 # A transform is a dictionary containing a position, size and rotation
 transform = Schema({
     "position": is_2d_vec,
-    "shape": is_2d_vec,
+    "size": is_2d_vec,
     "rotation": is_number
 })
 
