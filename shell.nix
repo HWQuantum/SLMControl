@@ -16,7 +16,7 @@ stdenv.mkDerivation {
     hharp
     pkgs.qt5.full
     (python3.buildEnv.override {
-      extraLibs = with python3Packages; [ pyqt5 numpy pyqtgraph numba matplotlib adaptive ];
+      extraLibs = with python3Packages; [ pyqt5 numpy pyqtgraph numba matplotlib adaptive schema ];
       ignoreCollisions = true;
     })
   ];
