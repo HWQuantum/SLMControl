@@ -101,15 +101,6 @@ pattern = Schema({"id": UUID, "type": str, Optional("name"): str, str: object})
 slm_controller = Schema({
     "screens": Or({UUID: slm_screen}, {}),
     "views": Or({UUID: slm_view}, {}),
-    "patterns": Or({UUID: pattern}, {})
+    "patterns": Or({UUID: pattern}, {}),
+    str: object
 })
-
-patterns = {
-    i: {
-        "id": i,
-        "name": "hi",
-        "mub": 2,
-        "value": 1
-    }
-    for i in [uuid4() for _ in range(100)]
-}
