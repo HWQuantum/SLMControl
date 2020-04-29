@@ -151,3 +151,27 @@ class SLMState:
             return True
         except KeyError:
             return False
+
+    def get_pattern_name(self, pattern_id: UUID) -> str:
+        """Get the pattern name from its id
+        """
+        try:
+            return self._data["patterns"][pattern_id]["name"]
+        except KeyError:
+            return ""
+
+    def get_view_name(self, view_id: UUID) -> str:
+        """Get the view name from its id
+        """
+        try:
+            return self._data["views"][view_id]["name"]
+        except KeyError:
+            return ""
+
+    def get_screen_name(self, screen_id: UUID) -> str:
+        """Get the screen name from its id
+        """
+        try:
+            return self._data["screens"][screen_id]["name"]
+        except KeyError:
+            return ""
