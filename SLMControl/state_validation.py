@@ -30,7 +30,7 @@ def is_number(n):
 def is_screen_size(v):
     """Validates a correct screen size
     """
-    return screen_size_value(t[0]) and screen_size_value(t[1])
+    return screen_size_value(v[0]) and screen_size_value(v[1])
 
 
 def is_view_size(v):
