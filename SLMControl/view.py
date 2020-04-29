@@ -57,35 +57,3 @@ class View(qw.QWidget):
     @qc.pyqtSlot()
     def update_pattern_references(self):
         pass
-
-
-import sys
-app = qw.QApplication(sys.argv)
-s = SLMState()
-s.add_view({
-    "id": uuid4(),
-    "name": "test_view",
-    "transform": {
-        "position": (0, 0),
-        "size": (0, 0),
-        "rotation": 0
-    },
-    "patterns": {}
-})
-v = View(s.get_view_by_name("test_view"))
-v.show()
-w = qw.QWidget()
-l = qw.QHBoxLayout()
-w.setLayout(l)
-b = qw.QPushButton("Hi")
-l.addWidget(b)
-
-
-def update_s():
-    s.get_view_by_name("test_view")["transform"]["position"] = (20, 10)
-    v.transform.update_from_data()
-
-
-b.clicked.connect(update_s)
-w.show()
-sys.exit(app.exec())

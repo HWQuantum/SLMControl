@@ -19,73 +19,46 @@ class ViewReference(qw.QWidget):
         self._state = state
 
         self.name = qw.QLabel()
-        self.coefficient = pg.SpinBox()
-        self.coefficient.setValue(reference_data[0])
-        self.transform = Transform(reference_data[1])
+        self.pos_x = pg.SpinBox()
+        self.pos_y = pg.SpinBox()
+        self.size_x = pg.SpinBox()
+        self.size_y = pg.SpinBox()
         layout = qw.QHBoxLayout()
-        layout.addWidget(self.coefficient)
-        layout.addWidget(self.transform)
+        layout.addWidget(self.pos_x)
+        layout.addWidget(self.pos_y)
+        layout.addWidget(self.size_x)
+        layout.addWidget(self.size_y)
         self.setLayout(layout)
 
     @qc.pyqtSlot()
     def update_from_data(self):
-        self.coefficient.setValue(self._data[0])
-        self.transform.update_from_data()
+        self.pos_x.setValue(self._data[0][0])
+        self.pos_y.setValue(self._data[0][1])
+        self.size_x.setValue(self._data[1][0])
+        self.size_y.setValue(self._data[1][1])
 
 
-class View(qw.QWidget):
+class Screen(qw.QWidget):
 
     data_changed = qc.pyqtSignal()
 
-    def __init__(self, view_data, state):
-        """We need the state reference to be able to get the names of patterns
+    def __init__(self, screen_data, state):
+        """We need the state reference to be able to get the names of views
         """
         super().__init__()
-        self._data = view_data
+        self._data = screen_data
         self._state = state
         layout = qw.QHBoxLayout()
-        self.transform = Transform(self._data["transform"])
-        self.pattern_references = []
-        layout.addWidget(self.transform)
+        self.view_references = []
         self.setLayout(layout)
 
     @qc.pyqtSlot()
     def update_from_data(self):
         """Update the data from the reference this widget has to it
         """
-        self.transform.update_from_data()
+        pass
 
     @qc.pyqtSlot()
     def update_pattern_references(self):
-        pass
-
-import sys
-app = qw.QApplication(sys.argv)
-s = SLMState()
-s.add_view({
-    "id": uuid4(),
-    "name": "test_view",
-    "transform": {
-        "position": (0, 0),
-        "size": (0, 0),
-        "rotation": 0
-    },
-    "patterns": {}
-})
-v = View(s.get_view_by_name("test_view"))
-v.show()
-w = qw.QWidget()
-l = qw.QHBoxLayout()
-w.setLayout(l)
-b = qw.QPushButton("Hi")
-l.addWidget(b)
-
-
-def update_s():
-    s.get_view_by_name("test_view")["transform"]["position"] = (20, 10)
-    v.transform.update_from_data()
-
-
-b.clicked.connect(update_s)
-w.show()
-sys.exit(app.exec())
+        for v in self.view_references:
+            v.update_from_data()
