@@ -123,8 +123,8 @@ class SLMState:
         except KeyError:
             return False
 
-    def connect_view_to_screen(self, view_id, screen_id, position,
-                               size) -> bool:
+    def connect_view_to_screen(
+            self, view_id, screen_id, position=(0, 0), size=(0, 0)) -> bool:
         """Connect a view to the screen, with the given position and size
         returns True if it connected, False otherwise
         """
