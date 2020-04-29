@@ -89,16 +89,21 @@ slm_view = Schema({
     "id": UUID,
     Optional("name"): str,
     "transform": transform,
-    "patterns": Or({UUID:is_pattern_reference_data}, {})
+    "patterns": Or({UUID: is_pattern_reference_data}, {})
 })
 
 # Pattern is a thing that can be projected onto an slm screen
-pattern = Schema({"id": UUID, "type": str, Optional("name"): str, str: object})
+pattern = Schema({
+    "id": UUID,
+    "type": str,
+    Optional("name"): str,
+    Optional(str): object
+})
 
 # The data for controlling a set of SLMs
 slm_controller = Schema({
     "screens": Or({UUID: slm_screen}, {}),
     "views": Or({UUID: slm_view}, {}),
     "patterns": Or({UUID: pattern}, {}),
-    str: object
+    Optional(str): object
 })
