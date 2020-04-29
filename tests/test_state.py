@@ -7,7 +7,7 @@ import SLMControl.state_validation as sv
 from uuid import uuid4
 
 
-def test_spec_after(func):
+def _test_spec_after(func):
     def wrapper_test_spec(*args, **kwargs):
         v = func(*args, **kwargs)
         args[0].assertTrue(sv.slm_controller.is_valid(args[0].state._data),
@@ -54,22 +54,22 @@ class SLMStateTest(unittest.TestCase):
         }
         self.state._data["additional_data"] = 2
 
-    @test_spec_after
+    @_test_spec_after
     def test_get_screen_by_uuid(self):
         self.assertEqual(self.state.get_screen_by_uuid(self.screen_id),
                          self.state._data["screens"][self.screen_id])
 
-    @test_spec_after
+    @_test_spec_after
     def test_get_view_by_uuid(self):
         self.assertEqual(self.state.get_view_by_uuid(self.view_id),
                          self.state._data["views"][self.view_id])
 
-    @test_spec_after
+    @_test_spec_after
     def test_get_pattern_by_uuid(self):
         self.assertEqual(self.state.get_pattern_by_uuid(self.pattern_id),
                          self.state._data["patterns"][self.pattern_id])
 
-    @test_spec_after
+    @_test_spec_after
     def test_get_pattern_by_name(self):
         self.assertEqual(self.state.get_pattern_by_name(self.pattern_name),
                          self.state.get_pattern_by_uuid(self.pattern_id))
@@ -77,7 +77,7 @@ class SLMStateTest(unittest.TestCase):
         with self.assertRaises(KeyError):
             self.state.get_pattern_by_name("wrong_name")
 
-    @test_spec_after
+    @_test_spec_after
     def test_get_view_by_name(self):
         self.assertEqual(self.state.get_view_by_name(self.view_name),
                          self.state.get_view_by_uuid(self.view_id))
@@ -85,7 +85,7 @@ class SLMStateTest(unittest.TestCase):
         with self.assertRaises(KeyError):
             self.state.get_view_by_name("wrong_name")
 
-    @test_spec_after
+    @_test_spec_after
     def test_get_screen_by_name(self):
         self.assertEqual(self.state.get_screen_by_name(self.screen_name),
                          self.state.get_screen_by_uuid(self.screen_id))
@@ -93,7 +93,7 @@ class SLMStateTest(unittest.TestCase):
         with self.assertRaises(KeyError):
             self.state.get_screen_by_name("wrong_name")
 
-    @test_spec_after
+    @_test_spec_after
     def test_connect_pattern_to_view(self):
         self.assertTrue(
             self.state.connect_pattern_to_view(self.pattern_id, self.view_id))
@@ -107,7 +107,7 @@ class SLMStateTest(unittest.TestCase):
                 }]
             })
 
-    @test_spec_after
+    @_test_spec_after
     def test_connect_pattern_to_view_twice(self):
         transform = {
             "position": (10, -1),
@@ -121,6 +121,87 @@ class SLMStateTest(unittest.TestCase):
                                                0, transform))
         self.assertEqual(self.state._data["views"][self.view_id]["patterns"],
                          {self.pattern_id: [0, transform]})
+
+    @_test_spec_after
+    def test_adding_pattern(self):
+        my_id = uuid4()
+        pattern = {"id": my_id, "type": "test_type", "name": "added_name"}
+        self.state.add_pattern(pattern)
+        self.assertEqual(self.state.get_pattern_by_uuid(my_id), pattern)
+
+    @_test_spec_after
+    def test_adding_pattern_when_already_added(self):
+        my_id = uuid4()
+        pattern = {"id": my_id, "type": "test_type", "name": "added_name"}
+        self.state.add_pattern(pattern)
+        pattern2 = {"id": my_id, "type": "test_type", "name": "name2"}
+        self.state.add_pattern(pattern2)
+        self.assertEqual(self.state.get_pattern_by_uuid(my_id), pattern2)
+
+    @_test_spec_after
+    def test_remove_pattern(self):
+        self.state.connect_pattern_to_view(self.pattern_id, self.view_id)
+        self.state.remove_pattern(self.pattern_id)
+        self.assertEqual(self.state._data["patterns"], {})
+        self.assertEqual(self.state._data["views"][self.view_id]["patterns"],
+                         {})
+
+    @_test_spec_after
+    def test_add_view(self):
+        my_id = uuid4()
+        view = {
+            "id": my_id,
+            "name": "test_view",
+            "transform": {
+                "position": (0, 0),
+                "size": (0, 0),
+                "rotation": 0
+            },
+            "patterns": {}
+        }
+        self.state.add_view(view)
+        self.assertEqual(self.state.get_view_by_uuid(my_id), view)
+
+    @_test_spec_after
+    def test_add_view_when_already_added(self):
+        view = {
+            "id": self.view_id,
+            "name": "test_view",
+            "transform": {
+                "position": (0, 10),
+                "size": (100, 0),
+                "rotation": 20
+            },
+            "patterns": {}
+        }
+        self.state.add_view(view)
+        self.assertEqual(self.state.get_view_by_uuid(self.view_id), view)
+
+    def test_remove_view(self):
+        self.state.connect_view_to_screen(self.view_id, self.screen_id)
+        self.state.remove_view(self.view_id)
+        self.assertEqual(self.state._data["views"], {})
+        self.assertEqual(self.state._data["screens"][self.screen_id]["views"],
+                         {})
+
+    @_test_spec_after
+    def test_connect_view_to_screen(self):
+        self.assertTrue(
+            self.state.connect_view_to_screen(self.view_id, self.screen_id))
+        self.assertEqual(self.state._data["screens"][self.screen_id]["views"],
+                         {self.view_id: [(0, 0), (0, 0)]})
+
+    @_test_spec_after
+    def test_connect_view_to_screen_twice(self):
+        pos = (10, -10)
+        size = (30, 40)
+        self.assertTrue(
+            self.state.connect_view_to_screen(self.view_id, self.screen_id))
+        self.assertTrue(
+            self.state.connect_view_to_screen(self.view_id, self.screen_id,
+                                              pos, size))
+        self.assertEqual(self.state._data["screens"][self.screen_id]["views"],
+                         {self.view_id: [pos, size]})
 
 
 if __name__ == "__main__":
