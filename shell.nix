@@ -1,22 +1,32 @@
-with import <nixpkgs> {};
-let hharp = callPackage ./hydraHarpLib.nix {};
-    adaptive = callPackage ./adaptive.nix {
-      buildPythonPackage = python3Packages.buildPythonPackage;
-      fetchPypi = python3Packages.fetchPypi;
-      sortedcollections = python3Packages.sortedcollections;
-      scipy = python3Packages.scipy;
-      atomicwrites = python3Packages.atomicwrites;
-      pytest = python3Packages.pytest;
-      setuptools = python3Packages.setuptools;
-    };
-in
-stdenv.mkDerivation {
+with import <nixpkgs> { };
+let
+  hharp = callPackage ./hydraHarpLib.nix { };
+  adaptive = callPackage ./adaptive.nix {
+    buildPythonPackage = python3Packages.buildPythonPackage;
+    fetchPypi = python3Packages.fetchPypi;
+    sortedcollections = python3Packages.sortedcollections;
+    scipy = python3Packages.scipy;
+    atomicwrites = python3Packages.atomicwrites;
+    pytest = python3Packages.pytest;
+    setuptools = python3Packages.setuptools;
+  };
+in stdenv.mkDerivation {
   name = "SLMControl_environment";
   buildInputs = [
     hharp
+    nixfmt
     pkgs.qt5.full
     (python3.buildEnv.override {
-      extraLibs = with python3Packages; [ pyqt5 numpy pyqtgraph numba matplotlib adaptive schema ];
+      extraLibs = with python3Packages; [
+        pyqt5
+        numpy
+        pyqtgraph
+        numba
+        matplotlib
+        adaptive
+        schema
+        pytest
+      ];
       ignoreCollisions = true;
     })
   ];
