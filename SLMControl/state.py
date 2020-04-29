@@ -134,3 +134,20 @@ class SLMState:
         except KeyError as e:
             return False
         return True
+
+    def add_screen(self, screen: dict):
+        """Add a screen to the screens    
+        if the screen already existed, replace the data of the screen
+        """
+        self._data["screens"][screen["id"]] = screen
+
+    def remove_screen(self, screen_id: UUID) -> bool:
+        """Remove the given screen by id.
+        Returns True if the screen was in the dictionary.
+        Returns False otherwise
+        """
+        try:
+            self._data["screens"].pop(screen_id)
+            return True
+        except KeyError:
+            return False
