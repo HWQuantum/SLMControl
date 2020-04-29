@@ -1,106 +1,124 @@
-"""This module contains a description of the the state of the slmcontrol application
-
-The data is stored in a single dictionary, which is validated with the schema library
+"""This module contains an implementation of the state of the SLMControl program
 """
 
-from schema import Schema, And, Use, Optional, Or
-from typing import Union
-from uuid import uuid4, UUID
-import numpy as np
+from uuid import UUID, uuid4
 
 
-def screen_size_value(n):
-    """Return true if n >= 0 and is an integer
-    """
-    return (n >= 0) and isinstance(n, int)
+class SLMState:
+    def __init__(self):
+        # the minimal data conforming to the specs
+        self._data = {"screens": {}, "views": {}, "patterns": {}}
 
+    def get_screen_by_uuid(self, u: UUID) -> dict:
+        """Get a screen by its UUID, giving an error if it can't be found
+        """
+        return self._data["screens"][u]
 
-def view_size_value(n):
-    """Return true if n is a valid view size (integer)
-    """
-    return isinstance(n, int)
+    def get_view_by_uuid(self, u: UUID) -> dict:
+        """Get a view by its UUID, giving an error if it can't be found
+        """
+        return self._data["views"][u]
 
+    def get_pattern_by_uuid(self, u: UUID) -> dict:
+        """Get a pattern by its UUID, giving an error if it can't be found
+        """
+        return self._data["patterns"][u]
 
-def is_number(n):
-    """Return true if n is a number (int or float)
-    """
-    return isinstance(n, (int, float))
+    def _get_by_name(self, store: str, name: str) -> dict:
+        """Get a set of data by name, using store to select 
+        "screens" "views" or "patterns"
+        """
+        for d in self._data[store].values():
+            if "name" in d and d["name"] == name:
+                return d
+        raise KeyError(name)
 
+    def get_pattern_by_name(self, u: str) -> dict:
+        """Get the first pattern with the matching name, giving an error if it can't be found
+        """
+        return self._get_by_name("patterns", u)
 
-def is_screen_size(v):
-    """Validates a correct screen size
-    """
-    return screen_size_value(t[0]) and screen_size_value(t[1])
+    def get_screen_by_name(self, u: str) -> dict:
+        """Get the first screen with the matching name, giving an error if it can't be found
+        """
+        return self._get_by_name("screens", u)
 
+    def get_view_by_name(self, u: str) -> dict:
+        """Get the first view with the matching name, giving an error if it can't be found
+        """
+        return self._get_by_name("views", u)
 
-def is_view_size(v):
-    """Validates a correct size for a view on a screen
-    """
-    return view_size_value(v[0]) and view_size_value(v[1])
+    def connect_pattern_to_view(
+        self,
+        pattern_id: UUID,
+        view_id: UUID,
+        coefficient=1,
+        transform={
+            "position": (0, 0),
+            "size": (0, 0),
+            "rotation": 0
+        }
+    ) -> bool:
+        """Connect the given pattern to the given view
+        coefficient should be the coefficient to multiply the view by and transform should 
+        be its transform. 
+        If there is already a pattern reference in the view, the coefficient and transform 
+        will be overridden with the new values
 
+        returns True if the function succeeds in making the connection, False otherwise
+        """
+        try:
+            v = self.get_view_by_uuid(view_id)
+            v["patterns"] = [coefficient, transform]
+        except KeyError as e:
+            return False
+        return True
 
-def is_2d_vec(v):
-    """Validates a correct pattern size
-    """
-    return is_number(v[0]) and is_number(v[1])
+    def add_pattern(self, pattern: dict):
+        """Add the given pattern. 
+        pattern should have at least an id and a type.
+        Replaces a pattern if one already had the same ID
+        """
+        self._data["patterns"][pattern["id"]] = pattern
 
+    def remove_pattern(self, pattern_id: UUID) -> bool:
+        """Remove the given pattern id.
+        Returns True if the pattern was in the dictionary
+        Returns False if it wasn't
+        """
+        try:
+            # remove all pattern references from the views
+            for v in self._data["views"].values():
+                try:
+                    v["patterns"].pop(pattern_id)
+                except KeyError:
+                    pass
+            # remove from patterns
+            self._data["patterns"].pop(pattern_id)
+            return True
+        except KeyError:
+            return False
 
-def is_view_reference(v):
-    """Validates a view reference.
-    A view reference should be an iterable containing:
-    [uuid, screen_position, screen_size]
-    """
-    return isinstance(v[0], UUID) and is_2d_vec(v[1]) and is_2d_vec(v[2])
+    def add_view(self, view: dict):
+        """Add a view to the views    
+        if the view already existed, replace the data of the view
+        """
+        self._data["views"][view["id"]] = view
 
-
-def is_pattern_coefficient(v):
-    """Check if v is a valid coefficient to a pattern
-    """
-    return isinstance(v, (float, int, complex))
-
-
-def is_pattern_reference(v):
-    """Validates a pattern reference
-    A pattern reference should be an iterable containing:
-    [uuid, coefficient, transform]
-    where coefficient can be a complex number
-    """
-    return (isinstance(v[0], UUID) and is_pattern_coefficient(v[1])
-            and transform.validate(v[2]))
-
-
-# A transform is a dictionary containing a position, size and rotation
-transform = Schema({
-    "position": is_2d_vec,
-    "size": is_2d_vec,
-    "rotation": is_number
-})
-
-# The slm_screen is a representation of a specific SLM screen.
-# It can display multiple patterns by using multiple slm_views
-slm_screen = Schema({
-    "id": UUID,
-    Optional("name"): str,
-    "size": is_screen_size,
-    "offset": is_view_size,
-    "views": [is_view_reference]
-})
-
-# The slm_view represents a specific view onto a pattern
-slm_view = Schema({
-    "id": UUID,
-    Optional("name"): str,
-    "transform": transform,
-    "patterns": [is_pattern_reference]
-})
-
-# Pattern is a thing that can be projected onto an slm screen
-pattern = Schema({"id": UUID, "type": str, Optional("name"): str, str: object})
-
-# The data for controlling a set of SLMs
-slm_controller = Schema({
-    "screens": Or({UUID: slm_screen}, {}),
-    "views": Or({UUID: slm_view}, {}),
-    "patterns": Or({UUID: pattern}, {}),
-    str: object
-})
+    def remove_view(self, view_id: UUID) -> bool:
+        """Remove the given view by id.
+        Returns True if the view was in the dictionary.
+        Returns False otherwise
+        """
+        try:
+            # remove all view references from the screens
+            for s in self._data["screens"].values():
+                try:
+                    s["views"].pop(view_id)
+                except KeyError:
+                    pass
+            # remove from patterns
+            self._data["views"].pop(view_id)
+            return True
+        except KeyError:
+            return False

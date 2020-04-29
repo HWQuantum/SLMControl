@@ -45,12 +45,12 @@ def is_2d_vec(v):
     return is_number(v[0]) and is_number(v[1])
 
 
-def is_view_reference(v):
-    """Validates a view reference.
-    A view reference should be an iterable containing:
-    [uuid, screen_position, screen_size]
+def is_view_reference_data(v):
+    """Validates view reference data
+    View reference data should be an iterable containing:
+    [screen_position, screen_size]
     """
-    return isinstance(v[0], UUID) and is_2d_vec(v[1]) and is_2d_vec(v[2])
+    return is_2d_vec(v[0]) and is_2d_vec(v[1])
 
 
 def is_pattern_coefficient(v):
@@ -59,14 +59,12 @@ def is_pattern_coefficient(v):
     return isinstance(v, (float, int, complex))
 
 
-def is_pattern_reference(v):
-    """Validates a pattern reference
-    A pattern reference should be an iterable containing:
-    [uuid, coefficient, transform]
+def is_pattern_reference_data(v):
+    """Validates pattern reference data
+    the data should be a coefficient and a transform
     where coefficient can be a complex number
     """
-    return (isinstance(v[0], UUID) and is_pattern_coefficient(v[1])
-            and transform.validate(v[2]))
+    return (is_pattern_coefficient(v[0]) and transform.validate(v[1]))
 
 
 # A transform is a dictionary containing a position, size and rotation
@@ -83,7 +81,7 @@ slm_screen = Schema({
     Optional("name"): str,
     "size": is_screen_size,
     "offset": is_view_size,
-    "views": [is_view_reference]
+    "views": Or({UUID: is_view_reference_data}, {})
 })
 
 # The slm_view represents a specific view onto a pattern
@@ -91,7 +89,7 @@ slm_view = Schema({
     "id": UUID,
     Optional("name"): str,
     "transform": transform,
-    "patterns": [is_pattern_reference]
+    "patterns": Or({UUID:is_pattern_reference_data}, {})
 })
 
 # Pattern is a thing that can be projected onto an slm screen
