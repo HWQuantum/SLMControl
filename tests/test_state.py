@@ -73,16 +73,54 @@ class SLMStateTest(unittest.TestCase):
     def test_get_pattern_by_name(self):
         self.assertEqual(self.state.get_pattern_by_name(self.pattern_name),
                          self.state.get_pattern_by_uuid(self.pattern_id))
+        # gives key error when name not in state
+        with self.assertRaises(KeyError):
+            self.state.get_pattern_by_name("wrong_name")
 
     @test_spec_after
     def test_get_view_by_name(self):
         self.assertEqual(self.state.get_view_by_name(self.view_name),
                          self.state.get_view_by_uuid(self.view_id))
+        # gives key error when name not in state
+        with self.assertRaises(KeyError):
+            self.state.get_view_by_name("wrong_name")
 
     @test_spec_after
     def test_get_screen_by_name(self):
         self.assertEqual(self.state.get_screen_by_name(self.screen_name),
                          self.state.get_screen_by_uuid(self.screen_id))
+        # gives key error when name not in state
+        with self.assertRaises(KeyError):
+            self.state.get_screen_by_name("wrong_name")
+
+    @test_spec_after
+    def test_connect_pattern_to_view(self):
+        self.assertTrue(
+            self.state.connect_pattern_to_view(self.pattern_id, self.view_id))
+        self.assertEqual(
+            self.state._data["views"][self.view_id]["patterns"], {
+                self.pattern_id:
+                [1, {
+                    "position": (0, 0),
+                    "size": (0, 0),
+                    "rotation": 0
+                }]
+            })
+
+    @test_spec_after
+    def test_connect_pattern_to_view_twice(self):
+        transform = {
+            "position": (10, -1),
+            "size": (-10, -10),
+            "rotation": -1.0
+        }
+        self.assertTrue(
+            self.state.connect_pattern_to_view(self.pattern_id, self.view_id))
+        self.assertTrue(
+            self.state.connect_pattern_to_view(self.pattern_id, self.view_id,
+                                               0, transform))
+        self.assertEqual(self.state._data["views"][self.view_id]["patterns"],
+                         {self.pattern_id: [0, transform]})
 
 
 if __name__ == "__main__":
