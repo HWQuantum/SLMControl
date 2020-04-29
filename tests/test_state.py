@@ -203,6 +203,24 @@ class SLMStateTest(unittest.TestCase):
         self.assertEqual(self.state._data["screens"][self.screen_id]["views"],
                          {self.view_id: [pos, size]})
 
+    @_test_spec_after
+    def test_add_screen(self):
+        screen_id = uuid4()
+        screen = {
+            "id": screen_id,
+            "name": "new_screen",
+            "size": (50, 50),
+            "offset": (0, 0),
+            "views": {}
+        }
+        self.state.add_screen(screen)
+        self.assertEqual(self.state.get_screen_by_uuid(screen_id), screen)
+
+    @_test_spec_after
+    def test_remove_screen(self):
+        self.assertTrue(self.state.remove_screen(self.screen_id))
+        self.assertEqual(self.state._data["screens"], {})
+
 
 if __name__ == "__main__":
     unittest.main()
