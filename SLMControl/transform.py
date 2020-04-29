@@ -30,5 +30,6 @@ class Transform(qw.QWidget):
     def update_from_data(self):
         self.x.setValue(data["position"][0])
         self.y.setValue(data["position"][1])
-        self.scale_x.setValue(data["scale"][0])
-        self.scale_y.setValue(data["position"][1])
+        self.scale_x.setValue(data["size"][0])
+        self.scale_y.setValue(data["size"][1])
+        self.rotation.setValue(data["rotation"])
