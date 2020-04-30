@@ -22,8 +22,9 @@ class MainWindow(qw.QMainWindow):
                 "rotation": 0
             }
         })
+        screen_id = uuid4()
         self.state.add_screen({
-            "id": uuid4(),
+            "id": screen_id,
             "name": "test_screen",
             "offset": [0, 0],
             "views": {}
@@ -43,6 +44,7 @@ class MainWindow(qw.QMainWindow):
         layout.addWidget(button)
         button = qw.QPushButton("Add reference")
         button.clicked.connect(lambda: self.state.connect_pattern_to_view(p_id, view_id))
+        button.clicked.connect(lambda: self.state.connect_view_to_screen(view_id, screen_id))
         layout.addWidget(button)
         w = qw.QWidget()
         w.setLayout(layout)
