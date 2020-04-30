@@ -78,7 +78,7 @@ transform = Schema({
 # It can display multiple patterns by using multiple slm_views
 slm_screen = Schema({
     "id": UUID,
-    Optional("name"): str,
+    "name": str,
     "size": is_screen_size,
     "offset": is_view_size,
     "views": Or({UUID: is_view_reference_data}, {})
@@ -87,7 +87,7 @@ slm_screen = Schema({
 # The slm_view represents a specific view onto a pattern
 slm_view = Schema({
     "id": UUID,
-    Optional("name"): str,
+    "name": str,
     "transform": transform,
     "patterns": Or({UUID: is_pattern_reference_data}, {})
 })
@@ -96,7 +96,7 @@ slm_view = Schema({
 pattern = Schema({
     "id": UUID,
     "type": str,
-    Optional("name"): str,
+    "name": str,
     Optional(str): object
 })
 
