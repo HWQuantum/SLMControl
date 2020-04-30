@@ -100,9 +100,9 @@ class SLMStateTest(unittest.TestCase):
         self.assertEqual(
             self.state._data["views"][self.view_id]["patterns"], {
                 self.pattern_id:
-                [1, {
-                    "position": (0, 0),
-                    "size": (0, 0),
+                [self.pattern_id, 1, {
+                    "position": [0, 0],
+                    "size": [0, 0],
                     "rotation": 0
                 }]
             })
@@ -110,8 +110,8 @@ class SLMStateTest(unittest.TestCase):
     @_test_spec_after
     def test_connect_pattern_to_view_twice(self):
         transform = {
-            "position": (10, -1),
-            "size": (-10, -10),
+            "position": [10, -1],
+            "size": [-10, -10],
             "rotation": -1.0
         }
         self.assertTrue(
@@ -120,7 +120,7 @@ class SLMStateTest(unittest.TestCase):
             self.state.connect_pattern_to_view(self.pattern_id, self.view_id,
                                                0, transform))
         self.assertEqual(self.state._data["views"][self.view_id]["patterns"],
-                         {self.pattern_id: [0, transform]})
+                         {self.pattern_id: [self.pattern_id, 0, transform]})
 
     @_test_spec_after
     def test_adding_pattern(self):
@@ -153,8 +153,8 @@ class SLMStateTest(unittest.TestCase):
             "id": my_id,
             "name": "test_view",
             "transform": {
-                "position": (0, 0),
-                "size": (0, 0),
+                "position": [0, 0],
+                "size": [0, 0],
                 "rotation": 0
             },
             "patterns": {}
@@ -168,8 +168,8 @@ class SLMStateTest(unittest.TestCase):
             "id": self.view_id,
             "name": "test_view",
             "transform": {
-                "position": (0, 10),
-                "size": (100, 0),
+                "position": [0, 10],
+                "size": [100, 0],
                 "rotation": 20
             },
             "patterns": {}
@@ -189,19 +189,19 @@ class SLMStateTest(unittest.TestCase):
         self.assertTrue(
             self.state.connect_view_to_screen(self.view_id, self.screen_id))
         self.assertEqual(self.state._data["screens"][self.screen_id]["views"],
-                         {self.view_id: [(0, 0), (0, 0)]})
+                         {self.view_id: [self.view_id, [0, 0], [0, 0]]})
 
     @_test_spec_after
     def test_connect_view_to_screen_twice(self):
-        pos = (10, -10)
-        size = (30, 40)
+        pos = [10, -10]
+        size = [30, 40]
         self.assertTrue(
             self.state.connect_view_to_screen(self.view_id, self.screen_id))
         self.assertTrue(
             self.state.connect_view_to_screen(self.view_id, self.screen_id,
                                               pos, size))
         self.assertEqual(self.state._data["screens"][self.screen_id]["views"],
-                         {self.view_id: [pos, size]})
+                         {self.view_id: [self.view_id, pos, size]})
 
     @_test_spec_after
     def test_add_screen(self):
@@ -209,8 +209,8 @@ class SLMStateTest(unittest.TestCase):
         screen = {
             "id": screen_id,
             "name": "new_screen",
-            "size": (50, 50),
-            "offset": (0, 0),
+            "size": [50, 50],
+            "offset": [0, 0],
             "views": {}
         }
         self.state.add_screen(screen)

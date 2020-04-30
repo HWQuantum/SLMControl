@@ -69,7 +69,7 @@ class SLMState:
         """
         try:
             v = self.get_view_by_uuid(view_id)
-            v["patterns"][pattern_id] = [coefficient, transform]
+            v["patterns"][pattern_id] = [pattern_id, coefficient, transform]
         except KeyError as e:
             return False
         return True
@@ -124,13 +124,13 @@ class SLMState:
             return False
 
     def connect_view_to_screen(
-            self, view_id, screen_id, position=(0, 0), size=(0, 0)) -> bool:
+            self, view_id, screen_id, position=[0, 0], size=[0, 0]) -> bool:
         """Connect a view to the screen, with the given position and size
         returns True if it connected, False otherwise
         """
         try:
             s = self.get_screen_by_uuid(screen_id)
-            s["views"][view_id] = [position, size]
+            s["views"][view_id] = [view_id, position, size]
         except KeyError as e:
             return False
         return True
