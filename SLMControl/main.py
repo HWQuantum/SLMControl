@@ -45,11 +45,24 @@ class MainWindow(qw.QMainWindow):
         button = qw.QPushButton("Add reference")
         button.clicked.connect(lambda: self.state.connect_pattern_to_view(p_id, view_id))
         button.clicked.connect(lambda: self.state.connect_view_to_screen(view_id, screen_id))
+        button.clicked.connect(self.move_test_button)
         layout.addWidget(button)
+        self.test_widget = qw.QPushButton("Test button")
         w = qw.QWidget()
         w.setLayout(layout)
         self.setCentralWidget(w)
 
+    def move_test_button(self):
+        p = self.test_widget.parentWidget()
+        if p is None:
+            w = qw.QDockWidget(self)
+            w.setWidget(self.test_widget)
+            self.test_widget.setParent(w)
+            w.show()
+        else:
+            p.show()
+        
+        
     def add_dock(self):
         w = qw.QDockWidget(self)
 
