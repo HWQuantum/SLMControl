@@ -12,18 +12,17 @@ from uuid import uuid4
 class PatternReference(qw.QWidget):
     """This is a widget which controls a pattern reference
     """
-    def __init__(self, pattern_id, reference_data, state):
+    def __init__(self, reference_data, state):
         super().__init__()
 
         self._data = reference_data
         self._state = state
-        self._id = pattern_id
         self.name = qw.QLabel()
         self.coefficient = pg.SpinBox()
-        self.coefficient.setValue(reference_data[0])
+        self.coefficient.setValue(reference_data[1])
         self.coefficient.sigValueChanged.connect(self.update_coefficient_from_gui)
         
-        self.transform = Transform(reference_data[1])
+        self.transform = Transform(reference_data[2])
         layout = qw.QVBoxLayout()
         layout.addWidget(self.name)
         layout.addWidget(self.coefficient)
@@ -35,16 +34,16 @@ class PatternReference(qw.QWidget):
     @qc.pyqtSlot()
     def update_from_data(self):
         self.update_name_from_data()
-        self.coefficient.setValue(self._data[0])
+        self.coefficient.setValue(self._data[1])
         self.transform.update_from_data()
 
     @qc.pyqtSlot()
     def update_name_from_data(self):
-        self.name.setText(self._state.get_pattern_name(self._id))
+        self.name.setText(self._state.get_pattern_name(self._data[0]))
 
     @qc.pyqtSlot()
     def update_coefficient_from_gui(self):
-        self._data[0] = self.coefficient.value()
+        self._data[1] = self.coefficient.value()
 
 
 class View(qw.QWidget):
@@ -93,7 +92,7 @@ class View(qw.QWidget):
         self.pattern_references.clear()
         for pr in sorted(self._data["patterns"]):
             self.pattern_references.append(
-                PatternReference(pr, self._data["patterns"][pr], self._state))
+                PatternReference(self._data["patterns"][pr], self._state))
             self.pattern_references_layout.addWidget(
                 self.pattern_references[-1])
 
