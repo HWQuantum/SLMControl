@@ -50,7 +50,7 @@ def is_view_reference_data(v):
     View reference data should be an iterable containing:
     [screen_position, screen_size]
     """
-    return is_2d_vec(v[0]) and is_2d_vec(v[1])
+    return isinstance(v[0], UUID) and is_2d_vec(v[1]) and is_2d_vec(v[2])
 
 
 def is_pattern_coefficient(v):
@@ -64,7 +64,8 @@ def is_pattern_reference_data(v):
     the data should be a coefficient and a transform
     where coefficient can be a complex number
     """
-    return (is_pattern_coefficient(v[0]) and transform.validate(v[1]))
+    return isinstance(v[0], UUID) and is_pattern_coefficient(
+        v[1]) and transform.validate(v[2])
 
 
 # A transform is a dictionary containing a position, size and rotation
@@ -93,12 +94,7 @@ slm_view = Schema({
 })
 
 # Pattern is a thing that can be projected onto an slm screen
-pattern = Schema({
-    "id": UUID,
-    "type": str,
-    "name": str,
-    Optional(str): object
-})
+pattern = Schema({"id": UUID, "type": str, "name": str, Optional(str): object})
 
 # The data for controlling a set of SLMs
 slm_controller = Schema({
