@@ -54,8 +54,8 @@ class SLMState:
         view_id: UUID,
         coefficient=1,
         transform={
-            "position": (0, 0),
-            "size": (0, 0),
+            "position": [0, 0],
+            "size": [0, 0],
             "rotation": 0
         }
     ) -> bool:

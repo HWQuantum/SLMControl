@@ -16,15 +16,15 @@ class MainWindow(qw.QMainWindow):
             "name": "test_view",
             "patterns": {},
             "transform": {
-                "position": (0, 0),
-                "size": (0, 0),
+                "position": [0, 0],
+                "size": [0, 0],
                 "rotation": 0
             }
         })
         self.state.add_screen({
             "id": uuid4(),
             "name": "test_screen",
-            "offset": (0, 0),
+            "offset": [0, 0],
             "views": {}
         })
         layout = qw.QHBoxLayout()

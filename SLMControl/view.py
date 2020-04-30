@@ -42,18 +42,29 @@ class View(qw.QWidget):
         super().__init__()
         self._data = view_data
         self._state = state
-        layout = qw.QHBoxLayout()
+        layout = qw.QVBoxLayout()
+        self.name = qw.QLineEdit()
+        self.name.textChanged.connect(self.update_name)
         self.transform = Transform(self._data["transform"])
         self.pattern_references = []
+        layout.addWidget(self.name)
         layout.addWidget(self.transform)
         self.setLayout(layout)
+        self.update_from_data()
 
     @qc.pyqtSlot()
     def update_from_data(self):
         """Update the data from the reference this widget has to it
         """
+        self.name.blockSignals(True)
+        self.name.setText(self._data["name"])
+        self.name.blockSignals(False)
         self.transform.update_from_data()
 
     @qc.pyqtSlot()
     def update_pattern_references(self):
         pass
+
+    @qc.pyqtSlot(str)
+    def update_name(self, name: str):
+        self._data["name"] = name
