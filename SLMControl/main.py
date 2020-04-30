@@ -11,8 +11,9 @@ class MainWindow(qw.QMainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.state = SLMState()
+        view_id = uuid4()
         self.state.add_view({
-            "id": uuid4(),
+            "id": view_id,
             "name": "test_view",
             "patterns": {},
             "transform": {
@@ -27,12 +28,21 @@ class MainWindow(qw.QMainWindow):
             "offset": [0, 0],
             "views": {}
         })
+        p_id = uuid4()
+        self.state.add_pattern({
+            "id": p_id,
+            "type": "test_type",
+            "name": "hello"
+        })
         layout = qw.QHBoxLayout()
         button = qw.QPushButton("Add new qdock")
         button.clicked.connect(self.add_dock)
         layout.addWidget(button)
         button = qw.QPushButton("Add new screen")
         button.clicked.connect(self.add_screen)
+        layout.addWidget(button)
+        button = qw.QPushButton("Add reference")
+        button.clicked.connect(lambda: self.state.connect_pattern_to_view(p_id, view_id))
         layout.addWidget(button)
         w = qw.QWidget()
         w.setLayout(layout)
