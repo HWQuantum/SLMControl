@@ -21,4 +21,5 @@ stdenv.mkDerivation {
     })
   ];
   LD_LIBRARY_PATH = "${hharp}/lib";
+  PYUEYE_DLL_PATH = "/usr/lib/";
 }
