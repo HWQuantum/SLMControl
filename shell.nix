@@ -13,6 +13,7 @@ in
 stdenv.mkDerivation {
   name = "SLMControl_environment";
   buildInputs = [
+    qt5Full
     hharp
     (python3.buildEnv.override {
       extraLibs = with python3Packages; [ pyqt5 numpy pyqtgraph numba matplotlib adaptive ];
