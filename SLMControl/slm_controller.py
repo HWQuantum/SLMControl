@@ -58,10 +58,10 @@ class SLMDisplay():
         self.window.setWindowTitle(window_title)
 
     @pyqtSlot(np.ndarray)
-    def set_image(self, image):
+    def set_image(self, image, **kwargs):
         '''Set the image which is being displayed on the fullscreen plot
         '''
-        self.window.set_and_update_image(image)
+        self.window.set_and_update_image(image, **kwargs)
 
 
 class FullScreenPlot(pg.PlotWidget):
@@ -113,12 +113,12 @@ class FullScreenPlot(pg.PlotWidget):
                        maxYRange=self.screen_size[1])
 
     @pyqtSlot(np.ndarray)
-    def set_and_update_image(self, new_image):
+    def set_and_update_image(self, new_image, **kwargs):
         '''Take a numpy array and set it as the new image,
         then update the display
         '''
         self.image = new_image
-        self.image_display.setImage(self.image)
+        self.image_display.setImage(self.image, **kwargs)
 
     @pyqtSlot(np.ndarray)
     def update_LUT(self, LUT):
@@ -627,7 +627,8 @@ if __name__ == "__main__":
     app = QApplication([])
 
     # w = MultiSLMController(app.screens(), [(512, 512), (512, 512)])
-    w = SplitSLMController(app.screens(), (512, 512))
-
+    # w = SplitSLMController(app.screens(), (512, 512))
+    w = SLMController("Big slm", app.screens(), (1920, 1152))
+    
     w.show()
     app.exec()

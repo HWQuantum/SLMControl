@@ -1,13 +1,17 @@
 from slm_controller import SLMController
 from pyueye import ueye
+import PyQt5.QtWidgets as qw
+import PyQt5.QtCore as qc
+import pyqtgraph as pg
 import numpy as np
 import sys
 
 
 class Camera:
-    def __init__(self):
+    def __init__(self, camera_num = 0):
         # get handle to the camera
-        self.hCam = ueye.HIDS(0)
+        self.hCam = ueye.HIDS(camera_num)
+        self.frame = None
 
         self.get_camera_info()
 
@@ -41,8 +45,7 @@ class Camera:
         if nRet != ueye.IS_SUCCESS:
             print("is_InquireImageMem ERROR")
 
-        # In order to display the image in an OpenCV window we need to...
-        # ...extract the data of our image memory
+    def get_frame(self):
         array = ueye.get_data(self.pcImageMemory,
                               self.width,
                               self.height,
@@ -50,12 +53,8 @@ class Camera:
                               self.pitch,
                               copy=False)
 
-        # bytes_per_pixel = int(nBitsPerPixel / 8)
-
-        # ...reshape it in an numpy array...
-        frame = np.reshape(
+        return np.reshape(
             array, (self.height.value, self.width.value, self.bytes_per_pixel))
-        print(np.where(frame>0))
 
     def get_camera_info(self):
         # establish info variables
@@ -69,7 +68,7 @@ class Camera:
             8
         )  #24: bits per pixel for color mode; take 8 bits per pixel for monochrome
         self.channels = 1  #3: channels for color mode(RGB); take 1 channel for monochrome
-        self.m_nColorMode = ueye.INT()  # Y8/RGB16/RGB24/REG32
+        self.m_nColorMode = ueye.INT(8)  # Y8/RGB16/RGB24/REG32
         self.bytes_per_pixel = int(self.nBitsPerPixel / 8)
 
         # Starts the driver and establishes the connection to the camera
@@ -109,13 +108,14 @@ class Camera:
         if int.from_bytes(self.sInfo.nColorMode.value,
                           byteorder='big') == ueye.IS_COLORMODE_BAYER:
             # setup the color depth to the current windows setting
-            ueye.is_GetColorDepth(self.hCam, self.nBitsPerPixel, self.m_nColorMode)
+            ueye.is_GetColorDepth(self.hCam, self.nBitsPerPixel,
+                                  self.m_nColorMode)
             self.bytes_per_pixel = int(self.nBitsPerPixel / 8)
-            print("IS_COLORMODE_BAYER: ", )
-            print("\tm_nColorMode: \t\t", self.m_nColorMode)
-            print("\tnBitsPerPixel: \t\t", self.nBitsPerPixel)
-            print("\tbytes_per_pixel: \t\t", self.bytes_per_pixel)
-            print()
+            # print("IS_COLORMODE_BAYER: ", )
+            # print("\tm_nColorMode: \t\t", self.m_nColorMode)
+            # print("\tnBitsPerPixel: \t\t", self.nBitsPerPixel)
+            # print("\tbytes_per_pixel: \t\t", self.bytes_per_pixel)
+            # print()
 
         elif int.from_bytes(self.sInfo.nColorMode.value,
                             byteorder='big') == ueye.IS_COLORMODE_CBYCRY:
@@ -123,11 +123,11 @@ class Camera:
             self.m_nColorMode = ueye.IS_CM_BGRA8_PACKED
             self.nBitsPerPixel = ueye.INT(32)
             self.bytes_per_pixel = int(self.nBitsPerPixel / 8)
-            print("IS_COLORMODE_CBYCRY: ", )
-            print("\tm_nColorMode: \t\t", self.m_nColorMode)
-            print("\tnBitsPerPixel: \t\t", self.nBitsPerPixel)
-            print("\tbytes_per_pixel: \t\t", self.bytes_per_pixel)
-            print()
+            # print("IS_COLORMODE_CBYCRY: ", )
+            # print("\tm_nColorMode: \t\t", self.m_nColorMode)
+            # print("\tnBitsPerPixel: \t\t", self.nBitsPerPixel)
+            # print("\tbytes_per_pixel: \t\t", self.bytes_per_pixel)
+            # print()
 
         elif int.from_bytes(self.sInfo.nColorMode.value,
                             byteorder='big') == ueye.IS_COLORMODE_MONOCHROME:
@@ -135,28 +135,51 @@ class Camera:
             self.m_nColorMode = ueye.IS_CM_MONO8
             self.nBitsPerPixel = ueye.INT(8)
             self.bytes_per_pixel = int(self.nBitsPerPixel / 8)
-            print("IS_COLORMODE_MONOCHROME: ", )
-            print("\tm_nColorMode: \t\t", self.m_nColorMode)
-            print("\tnBitsPerPixel: \t\t", self.nBitsPerPixel)
-            print("\tbytes_per_pixel: \t\t", self.bytes_per_pixel)
-            print()
+            # print("IS_COLORMODE_MONOCHROME: ", )
+            # print("\tm_nColorMode: \t\t", self.m_nColorMode)
+            # print("\tnBitsPerPixel: \t\t", self.nBitsPerPixel)
+            # print("\tbytes_per_pixel: \t\t", self.bytes_per_pixel)
+            # print()
 
         else:
             # for monochrome camera models use Y8 mode
             self.m_nColorMode = ueye.IS_CM_MONO8
             self.nBitsPerPixel = ueye.INT(8)
             self.bytes_per_pixel = int(self.nBitsPerPixel / 8)
-            print("else")
+            # print("else")
 
     def delete(self):
         ueye.is_FreeImageMem(self.hCam, self.pcImageMemory, self.MemID)
         ueye.is_ExitCamera(self.hCam)
 
+class CameraView(pg.PlotWidget):
+    def __init__(self):
+        super().__init__()
+        self.cam = Camera()
+        self.camera_size = (self.cam.width.value, self.cam.height.value)
+        self.image_display = pg.ImageItem(np.zeros(self.camera_size))
+
+        self.hideAxis('left')
+        self.hideAxis('bottom')
+
+        self.addItem(self.image_display)
+        self.timer = qc.QTimer()
+        self.timer.timeout.connect(self.update_image)
+        self.timer.start(20)
+
+    @qc.pyqtSlot()
+    def update_image(self):
+        self.image_display.setImage(self.cam.get_frame())
 
 if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
 
-    a = Camera()
+    app = QApplication([])
+
+    v = CameraView()
+    v.show()
+
+    app.exec()
     # app = QApplication([])
 
     # w = SLMController("Ello", app.screens(), (512, 512))
